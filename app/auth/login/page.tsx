@@ -180,7 +180,7 @@ export default function LoginPage() {
             <span className="text-sm text-gray-600">
               Nemate nalog?{' '}
               <Link 
-                href="/register" 
+                href="/auth/register" 
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
                 Registrujte se

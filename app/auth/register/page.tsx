@@ -288,7 +288,7 @@ export default function RegisterPage() {
             <span className="text-sm text-gray-600">
               Već imate nalog?{' '}
               <Link 
-                href="/login" 
+                href="/auth/login" 
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
                 Prijavite se
