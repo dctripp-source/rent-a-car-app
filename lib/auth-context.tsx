@@ -1,4 +1,3 @@
-// lib/auth-context.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -18,15 +17,26 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [mounted]);
+
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
@@ -36,27 +46,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
-
-// middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  const isPublicPath = path === '/' || path === '/login' || path === '/register';
-  const token = request.cookies.get('token')?.value || '';
-
-  if (!isPublicPath && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (isPublicPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-}
-
-export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-};
