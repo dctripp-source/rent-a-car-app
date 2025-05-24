@@ -1,5 +1,6 @@
+// lib/verify-token.ts
 import { NextRequest } from 'next/server';
-import { adminAuth } from './firebase-admin';
+import { adminAuth } from './firebase-admin'; // Promjena: adminAuth umjesto auth
 
 export async function verifyToken(request: NextRequest): Promise<string | null> {
   try {
