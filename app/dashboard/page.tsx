@@ -1,8 +1,9 @@
-// app/(dashboard)/page.tsx
+// app/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Car, Users, Calendar, TrendingUp } from 'lucide-react';
+import { useApi } from '@/hooks/useApi';
 
 interface DashboardStats {
   totalVehicles: number;
@@ -12,6 +13,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+  const { fetchWithAuth } = useApi();
   const [stats, setStats] = useState<DashboardStats>({
     totalVehicles: 0,
     totalClients: 0,
@@ -19,6 +21,7 @@ export default function DashboardPage() {
     monthlyRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchDashboardStats();
@@ -26,11 +29,23 @@ export default function DashboardPage() {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('/api/dashboard/stats');
+      const response = await fetchWithAuth('/api/dashboard/stats');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch stats');
+      }
+
       const data = await response.json();
-      setStats(data);
-    } catch (error) {
+      setStats({
+        totalVehicles: data.totalVehicles || 0,
+        totalClients: data.totalClients || 0,
+        activeRentals: data.activeRentals || 0,
+        monthlyRevenue: data.monthlyRevenue || 0,
+      });
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
+      setError(error.message || 'Greška pri učitavanju statistika');
     } finally {
       setLoading(false);
     }
@@ -67,6 +82,22 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button 
+            onClick={fetchDashboardStats}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Pokušaj ponovo
+          </button>
+        </div>
       </div>
     );
   }

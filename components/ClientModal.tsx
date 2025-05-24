@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Client } from '@/types';
+import { useApi } from '@/hooks/useApi';
 
 interface ClientModalProps {
   client: Client | null;
@@ -11,6 +12,7 @@ interface ClientModalProps {
 }
 
 export default function ClientModal({ client, onClose }: ClientModalProps) {
+  const { fetchWithAuth } = useApi();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,7 +53,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
         ? `/api/clients/${client.id}`
         : '/api/clients';
 
-      const response = await fetch(url, {
+      const response = await fetchWithAuth(url, {
         method: client ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,13 +61,16 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Greška pri čuvanju klijenta');
+        throw new Error(data.error || 'Greška pri čuvanju klijenta');
       }
 
       onClose();
-    } catch (error) {
-      setError('Greška pri čuvanju klijenta. Pokušajte ponovo.');
+    } catch (error: any) {
+      console.error('Error saving client:', error);
+      setError(error.message || 'Greška pri čuvanju klijenta. Pokušajte ponovo.');
     } finally {
       setLoading(false);
     }
@@ -73,7 +78,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             {client ? 'Izmjeni klijenta' : 'Dodaj novog klijenta'}
@@ -81,6 +86,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
+            type="button"
           >
             <X className="h-6 w-6" />
           </button>
@@ -95,7 +101,9 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Ime i prezime</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Ime i prezime <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="name"
@@ -103,11 +111,14 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Petar Petrović"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Email <span className="text-red-500">*</span>
+              </label>
               <input
                 type="email"
                 name="email"
@@ -115,39 +126,49 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="email@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Telefon</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Telefon
+              </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="+387 65 123 456"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Adresa</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Adresa
+              </label>
               <textarea
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
                 rows={3}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ulica i broj, Grad, Poštanski broj"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Broj lične karte</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Broj lične karte
+              </label>
               <input
                 type="text"
                 name="id_number"
                 value={formData.id_number}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="123456789"
               />
             </div>
           </div>
@@ -157,15 +178,23 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              disabled={loading}
             >
               Otkaži
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
-              {loading ? 'Čuvanje...' : client ? 'Izmjeni' : 'Dodaj'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Čuvanje...
+                </>
+              ) : (
+                client ? 'Izmjeni' : 'Dodaj'
+              )}
             </button>
           </div>
         </form>

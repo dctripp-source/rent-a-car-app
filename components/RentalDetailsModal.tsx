@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { X, Calendar, User, Car, Download, Plus } from 'lucide-react';
 import { Rental } from '@/types';
 import { format } from 'date-fns';
+import { useApi } from '@/hooks/useApi';
 
 interface RentalDetailsModalProps {
   rental: Rental;
@@ -12,9 +13,12 @@ interface RentalDetailsModalProps {
 }
 
 export default function RentalDetailsModal({ rental, onClose }: RentalDetailsModalProps) {
+  const { fetchWithAuth } = useApi();
   const [showExtension, setShowExtension] = useState(false);
   const [extensionDays, setExtensionDays] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [error, setError] = useState('');
 
   const extensionPrice = extensionDays * (rental.vehicle?.daily_rate || 0);
   const newEndDate = new Date(rental.end_date);
@@ -22,8 +26,10 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
 
   const handleExtend = async () => {
     setLoading(true);
+    setError('');
+    
     try {
-      const response = await fetch(`/api/rentals/${rental.id}/extend`, {
+      const response = await fetchWithAuth(`/api/rentals/${rental.id}/extend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,27 +40,73 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
         }),
       });
 
-      if (response.ok) {
-        onClose();
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Greška pri produženju');
       }
-    } catch (error) {
+
+      onClose();
+    } catch (error: any) {
       console.error('Error extending rental:', error);
+      setError(error.message || 'Greška pri produženju iznajmljivanja');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGeneratePDF = async () => {
+    setDownloadingPdf(true);
+    setError('');
+    
     try {
-      const response = await fetch(`/api/rentals/${rental.id}/contract`);
+      const response = await fetchWithAuth(`/api/rentals/${rental.id}/contract`);
+      
+      if (!response.ok) {
+        throw new Error('Greška pri generisanju PDF-a');
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `ugovor-${rental.id}.pdf`;
+      document.body.appendChild(a);
       a.click();
-    } catch (error) {
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error: any) {
       console.error('Error generating PDF:', error);
+      setError('Greška pri generisanju ugovora');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleCompleteRental = async () => {
+    if (!confirm('Da li ste sigurni da želite označiti ovo iznajmljivanje kao završeno?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetchWithAuth(`/api/rentals/${rental.id}/complete`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Greška pri završetku iznajmljivanja');
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error completing rental:', error);
+      setError(error.message || 'Greška pri završetku iznajmljivanja');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,6 +124,12 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-md text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Vehicle Info */}
@@ -101,9 +159,6 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
             <p className="text-sm text-gray-600">Email: {rental.client?.email}</p>
             {rental.client?.phone && (
               <p className="text-sm text-gray-600">Telefon: {rental.client?.phone}</p>
-            )}
-            {rental.client?.id_number && (
-              <p className="text-sm text-gray-600">Broj LK: {rental.client?.id_number}</p>
             )}
           </div>
 
@@ -138,7 +193,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold mb-2">Cijena</h3>
             <p className="text-2xl font-bold text-blue-900">
-              {rental.total_price.toFixed(2)} KM
+              {(typeof rental.total_price === 'number' ? rental.total_price : parseFloat(rental.total_price)).toFixed(2)} KM
             </p>
           </div>
 
@@ -186,7 +241,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
                     Cijena produženja: <span className="font-medium">{extensionPrice.toFixed(2)} KM</span>
                   </p>
                   <p className="text-lg font-semibold text-green-800 mt-2">
-                    Nova ukupna cijena: {(rental.total_price + extensionPrice).toFixed(2)} KM
+                    Nova ukupna cijena: {((typeof rental.total_price === 'number' ? rental.total_price : parseFloat(rental.total_price)) + extensionPrice).toFixed(2)} KM
                   </p>
                 </div>
 
@@ -194,13 +249,14 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
                   <button
                     onClick={handleExtend}
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Produžavanje...' : 'Potvrdi produženje'}
                   </button>
                   <button
                     onClick={() => setShowExtension(false)}
                     className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                    disabled={loading}
                   >
                     Otkaži
                   </button>
@@ -213,11 +269,32 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
           <div className="flex space-x-3">
             <button
               onClick={handleGeneratePDF}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              disabled={downloadingPdf}
+              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="h-5 w-5 mr-2" />
-              Generiši ugovor (PDF)
+              {downloadingPdf ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Generisanje...
+                </>
+              ) : (
+                <>
+                  <Download className="h-5 w-5 mr-2" />
+                  Generiši ugovor (PDF)
+                </>
+              )}
             </button>
+            
+            {rental.status === 'active' && (
+              <button
+                onClick={handleCompleteRental}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Završavanje...' : 'Završi iznajmljivanje'}
+              </button>
+            )}
+            
             <button
               onClick={onClose}
               className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"

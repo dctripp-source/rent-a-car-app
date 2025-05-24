@@ -1,4 +1,4 @@
-// app/(auth)/register/page.tsx
+// app/auth/register/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -56,15 +56,24 @@ export default function RegisterPage() {
         formData.password
       );
       
+      console.log('Firebase user created:', userCredential.user.uid);
+
       // Update display name
       await updateProfile(userCredential.user, {
         displayName: formData.name,
       });
 
+      // Get token for API call
+      const token = await userCredential.user.getIdToken();
+      console.log('Got auth token');
+
       // Create client in PostgreSQL
       const response = await fetch('/api/clients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           firebase_uid: userCredential.user.uid,
           name: formData.name,
@@ -72,12 +81,21 @@ export default function RegisterPage() {
         }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error('Greška pri kreiranju korisnika u bazi podataka');
+        console.error('API error:', responseData);
+        throw new Error(responseData.error || 'Greška pri kreiranju korisnika u bazi podataka');
       }
 
-      router.push('/dashboard');
+      console.log('Client created in database:', responseData);
+
+      // Use window.location for full page refresh
+      window.location.href = '/dashboard';
+      
     } catch (error: any) {
+      console.error('Registration error:', error);
+      
       // Detaljnije error poruke
       if (error.code === 'auth/email-already-in-use') {
         setError('Email adresa je već u upotrebi');
@@ -90,7 +108,6 @@ export default function RegisterPage() {
       } else {
         setError('Greška pri registraciji. Pokušajte ponovo.');
       }
-      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -299,7 +316,7 @@ export default function RegisterPage() {
 
         {/* Footer info */}
         <p className="mt-8 text-center text-xs text-gray-500">
-          © 2025 Rent-a-Car System. Sva prava zadržana | Made by <a href='https://qodevision.com' rel="_noopener" target='_blank'>QODE VISION</a>
+          © 2025 Rent-a-Car System. Sva prava zadržana. | Made by QODE VISION
         </p>
       </div>
     </div>
