@@ -1,13 +1,31 @@
+// app/api/rentals/[id]/contract/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { generateContract } from '@/lib/pdf-generator';
+import { verifyToken } from '@/lib/verify-token';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const userId = await verifyToken(request);
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid or missing token' }, 
+        { status: 401 }
+      );
+    }
+
     const rentalId = parseInt(params.id);
+
+    if (isNaN(rentalId)) {
+      return NextResponse.json(
+        { error: 'Invalid rental ID' }, 
+        { status: 400 }
+      );
+    }
 
     // Get rental details with vehicle and client info
     const rental = await sql`
@@ -27,16 +45,19 @@ export async function GET(
         c.address as client_address, 
         c.id_number as client_id_number
       FROM rentals r
-      JOIN vehicles v ON r.vehicle_id = v.id
-      JOIN clients c ON r.client_id = c.id
-      WHERE r.id = ${rentalId}
+      JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
+      JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
+      WHERE r.id = ${rentalId} AND r.user_id = ${userId}
     `;
 
-    if (!rental[0]) {
-      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
+    if (rental.length === 0) {
+      return NextResponse.json(
+        { error: 'Rental not found' }, 
+        { status: 404 }
+      );
     }
 
-    // Eksplicitno mapiranje podataka u ContractData tip
+    // Map data for PDF generation
     const contractData = {
       id: rental[0].id,
       start_date: rental[0].start_date,
@@ -64,6 +85,9 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error generating contract:', error);
-    return NextResponse.json({ error: 'Failed to generate contract' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to generate contract' }, 
+      { status: 500 }
+    );
   }
 }

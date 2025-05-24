@@ -1,9 +1,9 @@
-// components/VehicleModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import { Vehicle } from '@/types';
+import { useApi } from '@/hooks/useApi';
 
 interface VehicleModalProps {
   vehicle: Vehicle | null;
@@ -11,6 +11,7 @@ interface VehicleModalProps {
 }
 
 export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
+  const { fetchWithAuth } = useApi();
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
@@ -46,7 +47,22 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Molimo izaberite sliku');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Slika mora biti manja od 5MB');
+        return;
+      }
+      
+      setImageFile(file);
+      setError('');
     }
   };
 
@@ -69,18 +85,21 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         ? `/api/vehicles/${vehicle.id}`
         : '/api/vehicles';
 
-      const response = await fetch(url, {
+      const response = await fetchWithAuth(url, {
         method: vehicle ? 'PUT' : 'POST',
         body: formDataToSend,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Greška pri čuvanju vozila');
+        throw new Error(data.error || 'Greška pri čuvanju vozila');
       }
 
       onClose();
-    } catch (error) {
-      setError('Greška pri čuvanju vozila. Pokušajte ponovo.');
+    } catch (error: any) {
+      console.error('Error saving vehicle:', error);
+      setError(error.message || 'Greška pri čuvanju vozila. Pokušajte ponovo.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +107,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             {vehicle ? 'Izmjeni vozilo' : 'Dodaj novo vozilo'}
@@ -96,6 +115,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
+            type="button"
           >
             <X className="h-6 w-6" />
           </button>
@@ -110,7 +130,9 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Marka</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Marka <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="brand"
@@ -118,11 +140,14 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="npr. Toyota"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Model</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Model <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="model"
@@ -130,11 +155,14 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="npr. Corolla"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Godina</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Godina <span className="text-red-500">*</span>
+              </label>
               <input
                 type="number"
                 name="year"
@@ -148,7 +176,9 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Registarski broj</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Registarski broj <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 name="registration_number"
@@ -156,11 +186,14 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="npr. PD-123-AB"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Cijena po danu (KM)</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Cijena po danu (KM) <span className="text-red-500">*</span>
+              </label>
               <input
                 type="number"
                 name="daily_rate"
@@ -170,11 +203,14 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                 step="0.01"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="50.00"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Status <span className="text-red-500">*</span>
+              </label>
               <select
                 name="status"
                 value={formData.status}
@@ -188,14 +224,21 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Slika vozila</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Slika vozila
+              </label>
               <div className="mt-1">
                 <label className="cursor-pointer">
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-gray-400">
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-gray-400 transition-colors">
                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-600">
                       {imageFile ? imageFile.name : 'Kliknite za upload slike'}
                     </p>
+                    {imageFile && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Veličina: {(imageFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    )}
                   </div>
                   <input
                     type="file"
@@ -213,15 +256,23 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              disabled={loading}
             >
               Otkaži
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
-              {loading ? 'Čuvanje...' : vehicle ? 'Izmjeni' : 'Dodaj'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Čuvanje...
+                </>
+              ) : (
+                vehicle ? 'Izmjeni' : 'Dodaj'
+              )}
             </button>
           </div>
         </form>

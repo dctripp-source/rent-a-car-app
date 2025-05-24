@@ -1,27 +1,100 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { verifyToken } from '@/lib/verify-token';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const [vehicles, clients, activeRentals, monthlyRevenue] = await Promise.all([
-      sql`SELECT COUNT(*) as count FROM vehicles`,
-      sql`SELECT COUNT(*) as count FROM clients`,
-      sql`SELECT COUNT(*) as count FROM rentals WHERE status = 'active'`,
+    const userId = await verifyToken(request);
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid or missing token' }, 
+        { status: 401 }
+      );
+    }
+
+    // Get all statistics in parallel
+    const [
+      vehiclesResult,
+      clientsResult,
+      activeRentalsResult,
+      monthlyRevenueResult,
+      availableVehiclesResult,
+      rentedVehiclesResult,
+      completedRentalsResult,
+      upcomingReturnsResult
+    ] = await Promise.all([
+      // Total vehicles
+      sql`SELECT COUNT(*) as count FROM vehicles WHERE user_id = ${userId}`,
+      
+      // Total clients
+      sql`SELECT COUNT(*) as count FROM clients WHERE user_id = ${userId}`,
+      
+      // Active rentals
+      sql`SELECT COUNT(*) as count FROM rentals WHERE status = 'active' AND user_id = ${userId}`,
+      
+      // Monthly revenue
       sql`
         SELECT COALESCE(SUM(total_price), 0) as revenue 
         FROM rentals 
         WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+          AND user_id = ${userId}
       `,
+      
+      // Available vehicles
+      sql`SELECT COUNT(*) as count FROM vehicles WHERE status = 'available' AND user_id = ${userId}`,
+      
+      // Rented vehicles
+      sql`SELECT COUNT(*) as count FROM vehicles WHERE status = 'rented' AND user_id = ${userId}`,
+      
+      // Completed rentals this month
+      sql`
+        SELECT COUNT(*) as count 
+        FROM rentals 
+        WHERE status = 'completed' 
+          AND DATE_TRUNC('month', updated_at) = DATE_TRUNC('month', CURRENT_DATE)
+          AND user_id = ${userId}
+      `,
+      
+      // Upcoming returns (next 7 days)
+      sql`
+        SELECT COUNT(*) as count 
+        FROM rentals 
+        WHERE status = 'active' 
+          AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+          AND user_id = ${userId}
+      `
     ]);
 
+    // Calculate additional metrics
+    const totalVehicles = parseInt(vehiclesResult[0].count);
+    const availableVehicles = parseInt(availableVehiclesResult[0].count);
+    const occupancyRate = totalVehicles > 0 
+      ? ((totalVehicles - availableVehicles) / totalVehicles * 100).toFixed(1)
+      : 0;
+
     return NextResponse.json({
-      totalVehicles: vehicles[0].count,
-      totalClients: clients[0].count,
-      activeRentals: activeRentals[0].count,
-      monthlyRevenue: parseFloat(monthlyRevenue[0].revenue),
+      // Basic stats
+      totalVehicles,
+      totalClients: parseInt(clientsResult[0].count),
+      activeRentals: parseInt(activeRentalsResult[0].count),
+      monthlyRevenue: parseFloat(monthlyRevenueResult[0].revenue),
+      
+      // Additional stats
+      availableVehicles,
+      rentedVehicles: parseInt(rentedVehiclesResult[0].count),
+      completedRentalsThisMonth: parseInt(completedRentalsResult[0].count),
+      upcomingReturns: parseInt(upcomingReturnsResult[0].count),
+      occupancyRate: parseFloat(occupancyRate as string),
+      
+      // Metadata
+      lastUpdated: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch dashboard statistics' }, 
+      { status: 500 }
+    );
   }
 }
