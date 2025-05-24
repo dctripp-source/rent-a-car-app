@@ -1,6 +1,9 @@
 // app/(dashboard)/vehicles/page.tsx
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { Vehicle } from '@/types';

@@ -1,6 +1,9 @@
 // app/(dashboard)/calendar/page.tsx
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';

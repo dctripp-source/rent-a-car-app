@@ -1,6 +1,9 @@
 // app/(dashboard)/clients/page.tsx
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Phone, Mail, MapPin } from 'lucide-react';
 import { Client } from '@/types';
