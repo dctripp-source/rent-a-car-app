@@ -1,4 +1,3 @@
-// app/(auth)/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -21,9 +20,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
+      console.log('Attempting login with:', email);
+      
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      console.log('Login successful:', userCredential.user.email);
+      
+      // Dodajte malu pauzu da bi se token postavio
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Koristite window.location umjesto router.push za potpuni refresh
+      window.location.href = '/dashboard';
+      
     } catch (error: any) {
+      console.error('Login error:', error);
+      
       // Detaljnije error poruke
       if (error.code === 'auth/user-not-found') {
         setError('Korisnik sa ovom email adresom ne postoji');
@@ -33,10 +44,11 @@ export default function LoginPage() {
         setError('Neispravna email adresa');
       } else if (error.code === 'auth/too-many-requests') {
         setError('Previše pokušaja. Pokušajte ponovo kasnije');
+      } else if (error.code === 'auth/invalid-credential') {
+        setError('Neispravni podaci za prijavu. Provjerite email i lozinku.');
       } else {
-        setError('Neispravni podaci za prijavu');
+        setError('Greška: ' + (error.message || 'Neispravni podaci za prijavu'));
       }
-      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
