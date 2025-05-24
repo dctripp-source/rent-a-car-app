@@ -203,7 +203,7 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="mt-8 text-center text-xs text-gray-500">
-          © 2024 Rent-a-Car System. Sva prava zadržana.
+          © 2025 Rent-a-Car System. Sva prava zadržana | Made by <a href='https://qodevision.com' rel="_noopener" target='_blank'>QODE VISION</a>
         </p>
       </div>
     </div>

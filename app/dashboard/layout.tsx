@@ -27,14 +27,14 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
     }
   }, [user, loading, router]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/login');
+      router.push('/auth/login');
     } catch (error) {
       console.error('Logout error:', error);
     }

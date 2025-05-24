@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { uploadToS3 } from '@/lib/aws-s3';
+import { auth } from '@/lib/firebase';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Provjeri auth header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const decodedToken = await auth.currentUser?.getIdTokenResult();
+    const userId = decodedToken?.claims.sub;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const vehicles = await sql`
       SELECT * FROM vehicles 
+      WHERE user_id = ${userId}
       ORDER BY created_at DESC
     `;
     return NextResponse.json(vehicles);
@@ -17,6 +33,19 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const decodedToken = await auth.currentUser?.getIdTokenResult();
+    const userId = decodedToken?.claims.sub;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     
     const brand = formData.get('brand') as string;
@@ -34,8 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO vehicles (brand, model, year, registration_number, daily_rate, status, image_url)
-      VALUES (${brand}, ${model}, ${year}, ${registration_number}, ${daily_rate}, ${status}, ${image_url})
+      INSERT INTO vehicles (brand, model, year, registration_number, daily_rate, status, image_url, user_id)
+      VALUES (${brand}, ${model}, ${year}, ${registration_number}, ${daily_rate}, ${status}, ${image_url}, ${userId})
       RETURNING *
     `;
 
