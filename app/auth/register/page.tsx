@@ -316,7 +316,7 @@ export default function RegisterPage() {
 
         {/* Footer info */}
         <p className="mt-8 text-center text-xs text-gray-500">
-          © 2025 Rent-a-Car System. Sva prava zadržana. | Made by QODE VISION
+          © 2025 Novera Rent. Sva prava zadržana. | Made by QODE VISION
         </p>
       </div>
     </div>

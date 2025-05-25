@@ -37,6 +37,7 @@ export default function DashboardPage() {
       }
 
       const data = await response.json();
+      console.log('Dashboard received data:', data);
       setStats({
         totalVehicles: data.totalVehicles || 0,
         totalClients: data.totalClients || 0,
