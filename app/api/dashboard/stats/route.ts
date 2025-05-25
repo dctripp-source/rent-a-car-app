@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Dashboard stats - User ID:', userId);
+
     // Get all statistics in parallel
     const [
       vehiclesResult,
@@ -66,6 +68,14 @@ export async function GET(request: NextRequest) {
       `
     ]);
 
+    console.log('Vehicles raw result:', vehiclesResult);
+    console.log('Vehicles count value:', vehiclesResult[0].count);
+    console.log('Vehicles count type:', typeof vehiclesResult[0].count);
+    
+    console.log('Clients raw result:', clientsResult);
+    console.log('Clients count value:', clientsResult[0].count);
+    console.log('Clients count type:', typeof clientsResult[0].count);
+
     // Calculate additional metrics
     const totalVehicles = parseInt(vehiclesResult[0].count);
     const availableVehicles = parseInt(availableVehiclesResult[0].count);
@@ -98,3 +108,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
