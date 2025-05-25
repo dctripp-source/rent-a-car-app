@@ -1,3 +1,4 @@
+// app/dashboard/layout.tsx
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
@@ -26,15 +27,29 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/login');
-    }
+    const checkAuth = async () => {
+      try {
+        // Čekajte da se auth state učita
+        if (loading) return;
+        
+        console.log('Auth check - User:', user?.email);
+        
+        if (!user) {
+          console.log('No user found, redirecting to login');
+          router.push('/auth/login');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      }
+    };
+
+    checkAuth();
   }, [user, loading, router]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/auth/login');
+      window.location.href = '/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -69,15 +84,15 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform md:translate-x-0 ${
+      {/* Sidebar - Promijenjena boja u #03346E */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#03346E] shadow-lg transform transition-transform md:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <h1 className="text-xl font-bold text-gray-800">Rent-a-Car</h1>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-blue-800">
+          <h1 className="text-xl font-bold text-white">Rent-a-Car</h1>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden"
+            className="md:hidden text-white"
           >
             <X className="h-6 w-6" />
           </button>
@@ -90,7 +105,7 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+                className="flex items-center px-6 py-3 text-white hover:bg-blue-800 hover:text-white transition-colors"
                 onClick={() => setSidebarOpen(false)}
               >
                 <Icon className="h-5 w-5 mr-3" />
@@ -101,11 +116,11 @@ export default function DashboardLayout({
         </nav>
 
         <div className="absolute bottom-0 w-full p-6">
-          <div className="border-t pt-4">
-            <p className="text-sm text-gray-600 mb-3">{user.email}</p>
+          <div className="border-t border-blue-800 pt-4">
+            <p className="text-sm text-gray-300 mb-3">{user.email}</p>
             <button
               onClick={handleLogout}
-              className="flex items-center text-red-600 hover:text-red-700"
+              className="flex items-center text-white hover:text-gray-300 transition-colors"
             >
               <LogOut className="h-5 w-5 mr-2" />
               Odjavi se
@@ -116,16 +131,16 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className="md:ml-64">
-        {/* Mobile header */}
-        <header className="bg-white shadow-sm md:hidden">
+        {/* Mobile header - Promijenjena boja */}
+        <header className="bg-[#03346E] shadow-sm md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="text-gray-700"
+              className="text-white"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-lg font-semibold">Rent-a-Car</h1>
+            <h1 className="text-lg font-semibold text-white">Rent-a-Car</h1>
           </div>
         </header>
 

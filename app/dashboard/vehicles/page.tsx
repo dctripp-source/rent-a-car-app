@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Car as CarIcon, Calendar, MapPin, DollarSign } from 'lucide-react';
 import { Vehicle } from '@/types';
 import VehicleModal from '@/components/VehicleModal';
 import { useApi } from '@/hooks/useApi';
@@ -127,96 +127,81 @@ export default function VehiclesPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Slika
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Marka i model
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Godina
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Registracija
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cijena/dan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Akcije
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {vehicles.map((vehicle) => (
-                  <tr key={vehicle.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {vehicle.image_url ? (
-                        <img
-                          src={vehicle.image_url}
-                          alt={`${vehicle.brand} ${vehicle.model}`}
-                          className="h-10 w-16 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="h-10 w-16 bg-gray-200 rounded flex items-center justify-center">
-                          <Upload className="h-5 w-5 text-gray-400" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {vehicle.brand} {vehicle.model}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {vehicle.year}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {vehicle.registration_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {vehicle.daily_rate} KM
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        vehicle.status === 'available' 
-                          ? 'bg-green-100 text-green-800'
-                          : vehicle.status === 'rented'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {vehicle.status === 'available' ? 'Dostupno' : 
-                         vehicle.status === 'rented' ? 'Iznajmljeno' : 'Održavanje'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(vehicle)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vehicle.id)}
-                        className="text-red-600 hover:text-red-900"
-                        disabled={vehicle.status === 'rented'}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {vehicles.map((vehicle) => (
+            <div key={vehicle.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Slika vozila */}
+              <div className="relative h-48 bg-gray-200">
+                {vehicle.image_url ? (
+                  <img
+                    src={vehicle.image_url}
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CarIcon className="h-16 w-16 text-gray-400" />
+                  </div>
+                )}
+                {/* Status badge */}
+                <div className="absolute top-2 right-2">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    vehicle.status === 'available' 
+                      ? 'bg-green-100 text-green-800'
+                      : vehicle.status === 'rented'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {vehicle.status === 'available' ? 'Dostupno' : 
+                     vehicle.status === 'rented' ? 'Iznajmljeno' : 'Održavanje'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Informacije o vozilu */}
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {vehicle.brand} {vehicle.model}
+                </h3>
+                
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span>{vehicle.year}. godina</span>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <span>{vehicle.registration_number}</span>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    <span className="font-semibold text-gray-900">{vehicle.daily_rate} KM/dan</span>
+                  </div>
+                </div>
+
+                {/* Akcije */}
+                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-center space-x-3">
+                  <button
+                    onClick={() => handleEdit(vehicle)}
+                    className="text-blue-600 hover:text-blue-800 transition-colors p-2"
+                    title="Izmjeni"
+                  >
+                    <Edit2 className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(vehicle.id)}
+                    className="text-red-600 hover:text-red-800 transition-colors p-2"
+                    disabled={vehicle.status === 'rented'}
+                    title={vehicle.status === 'rented' ? 'Ne možete obrisati iznajmljeno vozilo' : 'Obriši'}
+                  >
+                    <Trash2 className={`h-5 w-5 ${vehicle.status === 'rented' ? 'opacity-50 cursor-not-allowed' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
