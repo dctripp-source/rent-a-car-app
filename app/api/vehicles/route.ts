@@ -50,10 +50,40 @@ export async function POST(request: NextRequest) {
     const daily_rate = parseFloat(formData.get('daily_rate') as string);
     const status = formData.get('status') as string || 'available';
     
+    // Nova polja
+    const fuel_type = formData.get('fuel_type') as string || 'gasoline';
+    const transmission = formData.get('transmission') as string || 'manual';
+    const seat_count = parseInt(formData.get('seat_count') as string) || 5;
+    
     // Validate required fields
     if (!brand || !model || !year || !registration_number || !daily_rate) {
       return NextResponse.json(
         { error: 'Missing required fields' }, 
+        { status: 400 }
+      );
+    }
+
+    // Validate enum values
+    const validFuelTypes = ['gasoline', 'diesel', 'hybrid', 'electric'];
+    const validTransmissions = ['manual', 'automatic'];
+    
+    if (!validFuelTypes.includes(fuel_type)) {
+      return NextResponse.json(
+        { error: 'Invalid fuel type' }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!validTransmissions.includes(transmission)) {
+      return NextResponse.json(
+        { error: 'Invalid transmission type' }, 
+        { status: 400 }
+      );
+    }
+    
+    if (seat_count < 2 || seat_count > 20) {
+      return NextResponse.json(
+        { error: 'Seat count must be between 2 and 20' }, 
         { status: 400 }
       );
     }
@@ -73,11 +103,13 @@ export async function POST(request: NextRequest) {
     const result = await sql`
       INSERT INTO vehicles (
         brand, model, year, registration_number, 
-        daily_rate, status, image_url, user_id
+        daily_rate, status, fuel_type, transmission, 
+        seat_count, image_url, user_id
       )
       VALUES (
         ${brand}, ${model}, ${year}, ${registration_number}, 
-        ${daily_rate}, ${status}, ${image_url}, ${userId}
+        ${daily_rate}, ${status}, ${fuel_type}, ${transmission}, 
+        ${seat_count}, ${image_url}, ${userId}
       )
       RETURNING *
     `;
