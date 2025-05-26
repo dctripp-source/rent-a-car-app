@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Car, Users, Calendar, TrendingUp, RefreshCw, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Car, Users, Calendar, TrendingUp, RefreshCw } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
 interface DashboardStats {
@@ -9,25 +9,6 @@ interface DashboardStats {
   totalClients: number;
   activeRentals: number;
   monthlyRevenue: number;
-}
-
-interface RecentActivity {
-  id: number;
-  type: 'rental_created' | 'rental_completed' | 'rental_cancelled' | 'vehicle_added';
-  description: string;
-  timestamp: string;
-  client_name?: string;
-  vehicle_info?: string;
-}
-
-interface UpcomingReturn {
-  id: number;
-  client_name: string;
-  vehicle_brand: string;
-  vehicle_model: string;
-  return_date: string;
-  days_remaining: number;
-  status: 'active' | 'overdue';
 }
 
 export default function DashboardPage() {
@@ -38,59 +19,50 @@ export default function DashboardPage() {
     activeRentals: 0,
     monthlyRevenue: 0,
   });
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [upcomingReturns, setUpcomingReturns] = useState<UpcomingReturn[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardStats();
     
     // Auto-refresh svakih 30 sekundi
     const interval = setInterval(() => {
-      fetchDashboardData(true);
+      fetchDashboardStats(true);
     }, 30000);
 
     return () => clearInterval(interval);
   }, []);
 
-  const fetchDashboardData = async (isRefresh = false) => {
+  const fetchDashboardStats = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
       }
       
-      const [statsRes, activitiesRes, returnsRes] = await Promise.all([
-        fetchWithAuth('/api/dashboard/stats'),
-        fetchWithAuth('/api/dashboard/recent-activities'),
-        fetchWithAuth('/api/dashboard/upcoming-returns')
-      ]);
+      const response = await fetchWithAuth('/api/dashboard/stats');
       
-      if (!statsRes.ok || !activitiesRes.ok || !returnsRes.ok) {
-        throw new Error('Failed to fetch dashboard data');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch stats');
       }
 
-      const statsData = await statsRes.json();
-      const activitiesData = await activitiesRes.json();
-      const returnsData = await returnsRes.json();
+      const data = await response.json();
+      console.log('Dashboard received data:', data);
       
       setStats({
-        totalVehicles: statsData.totalVehicles || 0,
-        totalClients: statsData.totalClients || 0,
-        activeRentals: statsData.activeRentals || 0,
-        monthlyRevenue: statsData.monthlyRevenue || 0,
+        totalVehicles: data.totalVehicles || 0,
+        totalClients: data.totalClients || 0,
+        activeRentals: data.activeRentals || 0,
+        monthlyRevenue: data.monthlyRevenue || 0,
       });
-
-      setRecentActivities(activitiesData);
-      setUpcomingReturns(returnsData);
       
       setLastUpdated(new Date());
       setError('');
     } catch (error: any) {
-      console.error('Error fetching dashboard data:', error);
-      setError(error.message || 'Greška pri učitavanju podataka');
+      console.error('Error fetching stats:', error);
+      setError(error.message || 'Greška pri učitavanju statistika');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -98,33 +70,7 @@ export default function DashboardPage() {
   };
 
   const handleRefresh = () => {
-    fetchDashboardData(true);
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'rental_created':
-        return <Calendar className="h-4 w-4 text-blue-500" />;
-      case 'rental_completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'rental_cancelled':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'vehicle_added':
-        return <Car className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const formatRelativeTime = (timestamp: string) => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffInHours = Math.floor((now.getTime() - time.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Prije manje od sat vremena';
-    if (diffInHours < 24) return `Prije ${diffInHours} sati`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `Prije ${diffInDays} dana`;
+    fetchDashboardStats(true);
   };
 
   const statCards = [
@@ -197,8 +143,7 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -217,73 +162,19 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Activities and Returns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activities */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Nedavne aktivnosti
           </h2>
-          {recentActivities.length === 0 ? (
-            <p className="text-gray-500">Nema nedavnih aktivnosti</p>
-          ) : (
-            <div className="space-y-4">
-              {recentActivities.slice(0, 5).map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatRelativeTime(activity.timestamp)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="text-gray-500">Nema nedavnih aktivnosti</p>
         </div>
 
-        {/* Upcoming Returns */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Predstojeća vraćanja
           </h2>
-          {upcomingReturns.length === 0 ? (
-            <p className="text-gray-500">Nema predstojećih vraćanja</p>
-          ) : (
-            <div className="space-y-4">
-              {upcomingReturns.slice(0, 5).map((returnItem) => (
-                <div key={returnItem.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {returnItem.client_name}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {returnItem.vehicle_brand} {returnItem.vehicle_model}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-medium ${
-                      returnItem.status === 'overdue' ? 'text-red-600' : 
-                      returnItem.days_remaining <= 1 ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {returnItem.status === 'overdue' 
-                        ? `${Math.abs(returnItem.days_remaining)} dana kašnjenja`
-                        : returnItem.days_remaining === 0 
-                        ? 'Danas'
-                        : `${returnItem.days_remaining} dana`
-                      }
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(returnItem.return_date).toLocaleDateString('sr-RS')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="text-gray-500">Nema predstojećih vraćanja</p>
         </div>
       </div>
     </div>
