@@ -122,7 +122,7 @@ export default function RegisterPage() {
             <Car className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Rent-a-Car System
+            Novera Rent
           </h1>
           <p className="text-gray-600">
             Kreirajte novi nalog
