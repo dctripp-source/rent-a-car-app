@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { usePathname } from 'next/navigation';
 
 export default function DashboardLayout({
   children,
@@ -24,9 +25,21 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+
   useEffect(() => {
+  // Refresh dashboard kada se vratite na dashboard stranicu
+  if (pathname === '/dashboard') {
+    // Trigger refresh
+    window.dispatchEvent(new Event('dashboard-refresh'));
+  }
+}, [pathname]);
+
+
+  useEffect(() => {
+    
     const checkAuth = async () => {
       try {
         // Čekajte da se auth state učita
@@ -89,7 +102,7 @@ export default function DashboardLayout({
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-blue-800">
-          <h1 className="text-xl font-bold text-white">Rent-a-Car</h1>
+          <h1 className="text-xl font-bold text-white">Novera Rent</h1>
           <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden text-white"
@@ -140,7 +153,7 @@ export default function DashboardLayout({
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-lg font-semibold text-white">Rent-a-Car</h1>
+            <h1 className="text-lg font-semibold text-white">Novera Rent</h1>
           </div>
         </header>
 

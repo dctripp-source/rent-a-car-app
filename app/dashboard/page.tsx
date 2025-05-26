@@ -1,8 +1,7 @@
-// app/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Car, Users, Calendar, TrendingUp } from 'lucide-react';
+import { Car, Users, Calendar, TrendingUp, RefreshCw } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
 interface DashboardStats {
@@ -21,14 +20,27 @@ export default function DashboardPage() {
     monthlyRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchDashboardStats();
+    
+    // Auto-refresh svakih 30 sekundi
+    const interval = setInterval(() => {
+      fetchDashboardStats(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (isRefresh = false) => {
     try {
+      if (isRefresh) {
+        setRefreshing(true);
+      }
+      
       const response = await fetchWithAuth('/api/dashboard/stats');
       
       if (!response.ok) {
@@ -38,18 +50,27 @@ export default function DashboardPage() {
 
       const data = await response.json();
       console.log('Dashboard received data:', data);
+      
       setStats({
         totalVehicles: data.totalVehicles || 0,
         totalClients: data.totalClients || 0,
         activeRentals: data.activeRentals || 0,
         monthlyRevenue: data.monthlyRevenue || 0,
       });
+      
+      setLastUpdated(new Date());
+      setError('');
     } catch (error: any) {
       console.error('Error fetching stats:', error);
       setError(error.message || 'Greška pri učitavanju statistika');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchDashboardStats(true);
   };
 
   const statCards = [
@@ -87,13 +108,13 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
+  if (error && !refreshing) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
           <button 
-            onClick={fetchDashboardStats}
+            onClick={handleRefresh}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Pokušaj ponovo
@@ -105,7 +126,22 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-500">
+            Ažurirano: {lastUpdated.toLocaleTimeString('sr-RS')}
+          </span>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+            Osvježi
+          </button>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => {
