@@ -1,23 +1,30 @@
-// app/dashboard/vehicles/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Upload, Car as CarIcon, Calendar, MapPin, DollarSign } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Car as CarIcon, Calendar, MapPin, DollarSign, Filter } from 'lucide-react';
 import { Vehicle } from '@/types';
 import VehicleModal from '@/components/VehicleModal';
 import { useApi } from '@/hooks/useApi';
 
+type VehicleStatus = 'all' | 'available' | 'rented' | 'maintenance';
+
 export default function VehiclesPage() {
   const { fetchWithAuth } = useApi();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [statusFilter, setStatusFilter] = useState<VehicleStatus>('all');
 
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  useEffect(() => {
+    filterVehicles();
+  }, [vehicles, statusFilter]);
 
   const fetchVehicles = async () => {
     try {
@@ -39,6 +46,14 @@ export default function VehiclesPage() {
     }
   };
 
+  const filterVehicles = () => {
+    if (statusFilter === 'all') {
+      setFilteredVehicles(vehicles);
+    } else {
+      setFilteredVehicles(vehicles.filter(vehicle => vehicle.status === statusFilter));
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Da li ste sigurni da želite obrisati ovo vozilo?')) {
       return;
@@ -54,7 +69,6 @@ export default function VehiclesPage() {
         throw new Error(errorData.error || 'Failed to delete vehicle');
       }
 
-      // Refresh lista
       fetchVehicles();
     } catch (error: any) {
       console.error('Error deleting vehicle:', error);
@@ -76,6 +90,20 @@ export default function VehiclesPage() {
     setIsModalOpen(false);
     setSelectedVehicle(null);
     fetchVehicles();
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'available': return 'Dostupno';
+      case 'rented': return 'Iznajmljeno';
+      case 'maintenance': return 'Servis';
+      default: return status;
+    }
+  };
+
+  const getStatusCount = (status: VehicleStatus) => {
+    if (status === 'all') return vehicles.length;
+    return vehicles.filter(v => v.status === status).length;
   };
 
   if (loading) {
@@ -115,20 +143,51 @@ export default function VehiclesPage() {
         </button>
       </div>
 
-      {vehicles.length === 0 ? (
+      {/* Filter Tabs */}
+      <div className="mb-6 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { key: 'all', label: 'Sva vozila' },
+            { key: 'available', label: 'Dostupna' },
+            { key: 'rented', label: 'Iznajmljena' },
+            { key: 'maintenance', label: 'Servis' }
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key as VehicleStatus)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                statusFilter === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label} ({getStatusCount(tab.key as VehicleStatus)})
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {filteredVehicles.length === 0 ? (
         <div className="bg-white shadow-md rounded-lg p-8 text-center">
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-500 mb-4">Nemate dodanih vozila</p>
-          <button
-            onClick={handleAdd}
-            className="text-blue-600 hover:text-blue-700"
-          >
-            Dodajte prvo vozilo
-          </button>
+          <p className="text-gray-500 mb-4">
+            {statusFilter === 'all' 
+              ? 'Nemate dodanih vozila' 
+              : `Nema vozila sa statusom "${getStatusLabel(statusFilter)}"`
+            }
+          </p>
+          {statusFilter === 'all' && (
+            <button
+              onClick={handleAdd}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              Dodajte prvo vozilo
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {vehicles.map((vehicle) => (
+          {filteredVehicles.map((vehicle) => (
             <div key={vehicle.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               {/* Slika vozila */}
               <div className="relative h-48 bg-gray-200">
@@ -152,8 +211,7 @@ export default function VehiclesPage() {
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {vehicle.status === 'available' ? 'Dostupno' : 
-                     vehicle.status === 'rented' ? 'Iznajmljeno' : 'Održavanje'}
+                    {getStatusLabel(vehicle.status)}
                   </span>
                 </div>
               </div>
