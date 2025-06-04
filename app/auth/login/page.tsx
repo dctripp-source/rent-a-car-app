@@ -61,9 +61,9 @@ export default function LoginPage() {
     <div className="text-center mb-8">
       
         <img 
-        src="/novera-logo.png" 
+        src="/novera-rnt-logo.png" 
         alt="Novera Rent Logo" 
-        className="h-64 w-64 mx-auto mb-4 object-contain"
+        className="h-60 w-60 mx-auto mb-4 object-contain"
       />
       
       
