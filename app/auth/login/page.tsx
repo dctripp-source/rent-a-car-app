@@ -59,13 +59,13 @@ export default function LoginPage() {
   <div className="max-w-md w-full">
     {/* Logo i naslov */}
     <div className="text-center mb-8">
-      <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-md">
+      
         <img 
           src="/novera-logo.png" 
           alt="Novera Rent Logo" 
           className="h-12 w-12 object-contain"
         />
-      </div>
+      
       
       <p className="text-gray-600">
         Prijavite se na svoj nalog
