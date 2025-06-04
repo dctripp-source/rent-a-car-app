@@ -56,19 +56,21 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="max-w-md w-full">
-        {/* Logo i naslov */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <Car className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Novera Rent
-          </h1>
-          <p className="text-gray-600">
-            Prijavite se na svoj nalog
-          </p>
-        </div>
+  <div className="max-w-md w-full">
+    {/* Logo i naslov */}
+    <div className="text-center mb-8">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-md">
+        <img 
+          src="/novera-logo.png" 
+          alt="Novera Rent Logo" 
+          className="h-12 w-12 object-contain"
+        />
+      </div>
+      
+      <p className="text-gray-600">
+        Prijavite se na svoj nalog
+      </p>
+    </div>
 
         {/* Forma */}
         <div className="bg-white rounded-lg shadow-xl p-8">
