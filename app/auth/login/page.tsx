@@ -176,7 +176,7 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -185,10 +185,10 @@ export default function LoginPage() {
                 <span className="px-2 bg-white text-gray-500">Ili</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Link za registraciju */}
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <span className="text-sm text-gray-600">
               Nemate nalog?{' '}
               <Link 
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 Registrujte se
               </Link>
             </span>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer info */}
