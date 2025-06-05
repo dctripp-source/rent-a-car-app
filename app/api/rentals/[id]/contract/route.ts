@@ -4,12 +4,18 @@ import { sql } from '@/lib/db';
 import { generateContract } from '@/lib/pdf-generator';
 import { verifyToken } from '@/lib/verify-token';
 
+// IMPORTANT: Disable caching completely
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('Contract generation started for rental ID:', params.id);
+    console.log('=== CONTRACT GENERATION START ===');
+    console.log('Rental ID:', params.id);
+    console.log('Timestamp:', new Date().toISOString());
     
     const userId = await verifyToken(request);
     
@@ -29,9 +35,10 @@ export async function GET(
       );
     }
 
-    console.log('Fetching data for rental ID:', rentalId, 'User:', userId);
+    console.log('User ID:', userId);
 
-    // Get rental details with vehicle and client info
+    // Get rental details
+    console.log('Fetching rental data...');
     const rental = await sql`
       SELECT 
         r.id,
@@ -54,30 +61,41 @@ export async function GET(
       WHERE r.id = ${rentalId} AND r.user_id = ${userId}
     `;
 
-    // Get company settings separately with detailed logging
-    console.log('Fetching company settings for user:', userId);
-    const companySettings = await sql`
-      SELECT * FROM company_settings 
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-    console.log('Company settings query result:', companySettings);
-    console.log('Company settings length:', companySettings.length);
-
     if (rental.length === 0) {
-      console.log('Rental not found for ID:', rentalId);
+      console.log('Rental not found');
       return NextResponse.json(
         { error: 'Rental not found' }, 
         { status: 404 }
       );
     }
 
-    console.log('Rental data retrieved successfully');
+    console.log('Rental found:', rental[0].id);
 
-    // Prepare company data (use defaults if not set)
+    // FRESH company settings query (no cache)
+    console.log('Fetching FRESH company settings...');
+    const companySettings = await sql`
+      SELECT * FROM company_settings 
+      WHERE user_id = ${userId}
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+    
+    console.log('Company settings query executed');
+    console.log('Found settings count:', companySettings.length);
+    
+    if (companySettings.length > 0) {
+      console.log('Found company settings:');
+      console.log('- Company name:', companySettings[0].company_name);
+      console.log('- Contact person:', companySettings[0].contact_person);
+      console.log('- Updated at:', companySettings[0].updated_at);
+    } else {
+      console.log('No company settings found for user:', userId);
+    }
+
+    // Prepare company data
     let company;
     if (companySettings.length > 0) {
-      console.log('Using database company settings:', companySettings[0].company_name);
+      console.log('Using database company settings');
       company = {
         company_name: companySettings[0].company_name,
         contact_person: companySettings[0].contact_person,
@@ -88,7 +106,7 @@ export async function GET(
         bank_account: companySettings[0].bank_account,
       };
     } else {
-      console.log('No company settings found, using defaults');
+      console.log('Using default company settings');
       company = {
         company_name: 'NOVERA RENT d.o.o.',
         contact_person: 'Desanka Jandric',
@@ -100,9 +118,11 @@ export async function GET(
       };
     }
 
-    console.log('Final company data for PDF:', company);
+    console.log('Final company data for PDF:');
+    console.log('- Name:', company.company_name);
+    console.log('- Person:', company.contact_person);
 
-    // Prepare contract data with company info
+    // Prepare contract data
     const contractData = {
       id: rental[0].id,
       start_date: rental[0].start_date,
@@ -118,30 +138,42 @@ export async function GET(
       client_phone: rental[0].client_phone || undefined,
       client_address: rental[0].client_address || undefined,
       client_id_number: rental[0].client_id_number || undefined,
-      // Dodaj podešavanja firme
       company: company,
     };
 
-    console.log('Starting PDF generation with company:', company.company_name);
+    console.log('Starting PDF generation...');
 
     // Generate PDF
     const pdfBuffer = await generateContract(contractData);
 
-    console.log('PDF generated successfully, buffer size:', pdfBuffer.length);
+    console.log('PDF generated successfully, size:', pdfBuffer.length);
 
-    // Return PDF
+    // Return PDF with cache-busting headers
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="ugovor-${rentalId}.pdf"`,
         'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
-  } catch (error) {
-    console.error('Contract generation error:', error);
+  } catch (error: unknown) {
+    console.error('=== CONTRACT GENERATION ERROR ===');
+    console.error('Error:', error);
     
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Type-safe error handling
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+      ? error 
+      : 'Unknown error occurred';
+      
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
+    
+    console.error('Stack:', errorStack);
     
     return NextResponse.json(
       { 

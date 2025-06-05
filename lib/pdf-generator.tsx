@@ -380,7 +380,12 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 
 export async function generateContract(contractData: ContractData): Promise<Buffer> {
   try {
-    console.log('Starting PDF generation with data:', contractData);
+    console.log('=== PDF GENERATION START ===');
+    console.log('Contract data received:');
+    console.log('- Company name:', contractData.company?.company_name);
+    console.log('- Contact person:', contractData.company?.contact_person);
+    console.log('- Client name:', contractData.client_name);
+    
     const doc = <ContractDocument data={contractData} />;
     
     const asPdf = pdf(doc);
@@ -388,9 +393,18 @@ export async function generateContract(contractData: ContractData): Promise<Buff
     const buffer = await blob.arrayBuffer();
     
     console.log('PDF generated successfully, size:', buffer.byteLength);
+    console.log('=== PDF GENERATION END ===');
     return Buffer.from(buffer);
-  } catch (error) {
-    console.error('Detailed PDF generation error:', error);
-    throw new Error(`PDF generation failed: ${error}`);
+  } catch (error: unknown) {
+    console.error('=== PDF GENERATION ERROR ===');
+    console.error('Error:', error);
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+      ? error 
+      : 'Unknown PDF generation error';
+      
+    throw new Error(`PDF generation failed: ${errorMessage}`);
   }
 }

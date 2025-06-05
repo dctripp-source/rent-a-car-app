@@ -1,93 +1,100 @@
+// app/dashboard/contracts/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Download, Eye, Search, Calendar, User, Car } from 'lucide-react';
+import { FileText, Download, Search, Calendar, User, Car } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
-interface Contract {
+interface Rental {
   id: number;
-  rental_id: number;
-  contract_number: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
-  vehicle_brand: string;
-  vehicle_model: string;
-  vehicle_registration: string;
+  vehicle_id: number;
+  client_id: number;
   start_date: string;
   end_date: string;
-  daily_rate: number;
-  total_amount: number;
-  extension_days?: number;
-  extension_amount?: number;
+  total_price: number;
   status: 'active' | 'completed' | 'cancelled';
   created_at: string;
-  pdf_url?: string;
+  vehicle?: {
+    brand: string;
+    model: string;
+    registration_number: string;
+  };
+  client?: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
 }
 
 export default function ContractsPage() {
   const { fetchWithAuth } = useApi();
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
+  const [rentals, setRentals] = useState<Rental[]>([]);
+  const [filteredRentals, setFilteredRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
+  const [downloading, setDownloading] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchContracts();
+    fetchRentals();
   }, []);
 
   useEffect(() => {
-    filterContracts();
-  }, [contracts, searchTerm, statusFilter]);
+    filterRentals();
+  }, [rentals, searchTerm, statusFilter]);
 
-  const fetchContracts = async () => {
+  const fetchRentals = async () => {
     try {
       setError('');
-      const response = await fetchWithAuth('/api/contracts');
+      
+      // Use simpler API call to avoid header issues
+      const response = await fetchWithAuth('/api/rentals');
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch contracts');
+        throw new Error(errorData.error || 'Failed to fetch rentals');
       }
 
       const data = await response.json();
-      setContracts(data);
+      setRentals(data);
     } catch (error: any) {
-      console.error('Error fetching contracts:', error);
+      console.error('Error fetching rentals:', error);
       setError(error.message || 'Greška pri učitavanju ugovora');
     } finally {
       setLoading(false);
     }
   };
 
-  const filterContracts = () => {
-    let filtered = contracts;
+  const filterRentals = () => {
+    let filtered = rentals;
 
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(contract => contract.status === statusFilter);
+      filtered = filtered.filter(rental => rental.status === statusFilter);
     }
 
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(contract =>
-        contract.client_name.toLowerCase().includes(term) ||
-        contract.contract_number.toLowerCase().includes(term) ||
-        contract.vehicle_brand.toLowerCase().includes(term) ||
-        contract.vehicle_model.toLowerCase().includes(term) ||
-        contract.vehicle_registration.toLowerCase().includes(term)
+      filtered = filtered.filter(rental =>
+        rental.client?.name.toLowerCase().includes(term) ||
+        rental.vehicle?.brand.toLowerCase().includes(term) ||
+        rental.vehicle?.model.toLowerCase().includes(term) ||
+        rental.vehicle?.registration_number.toLowerCase().includes(term) ||
+        rental.id.toString().includes(term)
       );
     }
 
-    setFilteredContracts(filtered);
+    setFilteredRentals(filtered);
   };
 
-  const handleDownloadContract = async (contractId: number) => {
+  const handleDownloadContract = async (rentalId: number) => {
     try {
-      const response = await fetchWithAuth(`/api/contracts/${contractId}/download`);
+      setDownloading(rentalId);
+      
+      // Direct PDF download with minimal headers
+      const response = await fetchWithAuth(`/api/rentals/${rentalId}/contract`);
       
       if (!response.ok) {
         throw new Error('Failed to download contract');
@@ -98,13 +105,16 @@ export default function ContractsPage() {
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `ugovor-${contractId}.pdf`;
+      a.download = `ugovor-${rentalId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error: any) {
       console.error('Error downloading contract:', error);
-      alert('Greška pri preuzimanju ugovora');
+      alert('Greška pri preuzimanju ugovora: ' + error.message);
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -140,7 +150,7 @@ export default function ContractsPage() {
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
           <button 
-            onClick={fetchContracts}
+            onClick={fetchRentals}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Pokušaj ponovo
@@ -155,11 +165,11 @@ export default function ContractsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Ugovori</h1>
         <div className="text-sm text-gray-500">
-          Ukupno: {filteredContracts.length} ugovora
+          Ukupno: {filteredRentals.length} ugovora
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Simplified */}
       <div className="mb-6 bg-white rounded-lg shadow p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
@@ -192,11 +202,11 @@ export default function ContractsPage() {
         </div>
       </div>
 
-      {filteredContracts.length === 0 ? (
+      {filteredRentals.length === 0 ? (
         <div className="bg-white shadow-md rounded-lg p-8 text-center">
           <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <p className="text-gray-500 mb-4">
-            {contracts.length === 0 
+            {rentals.length === 0 
               ? 'Nemate kreirana ugovora' 
               : 'Nema ugovora koji odgovaraju vašoj pretrazi'
             }
@@ -232,17 +242,17 @@ export default function ContractsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredContracts.map((contract) => (
-                  <tr key={contract.id} className="hover:bg-gray-50">
+                {filteredRentals.map((rental) => (
+                  <tr key={rental.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <FileText className="h-5 w-5 text-gray-400 mr-3" />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {contract.contract_number}
+                            #{rental.id.toString().padStart(3, '0')}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {new Date(contract.created_at).toLocaleDateString('sr-RS')}
+                            {new Date(rental.created_at).toLocaleDateString('sr-RS')}
                           </div>
                         </div>
                       </div>
@@ -252,10 +262,10 @@ export default function ContractsPage() {
                         <User className="h-4 w-4 text-gray-400 mr-2" />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {contract.client_name}
+                            {rental.client?.name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {contract.client_phone}
+                            {rental.client?.phone}
                           </div>
                         </div>
                       </div>
@@ -265,10 +275,10 @@ export default function ContractsPage() {
                         <Car className="h-4 w-4 text-gray-400 mr-2" />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {contract.vehicle_brand} {contract.vehicle_model}
+                            {rental.vehicle?.brand} {rental.vehicle?.model}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {contract.vehicle_registration}
+                            {rental.vehicle?.registration_number}
                           </div>
                         </div>
                       </div>
@@ -278,53 +288,35 @@ export default function ContractsPage() {
                         <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                         <div>
                           <div className="text-sm text-gray-900">
-                            {new Date(contract.start_date).toLocaleDateString('sr-RS')} - 
-                            {new Date(contract.end_date).toLocaleDateString('sr-RS')}
+                            {new Date(rental.start_date).toLocaleDateString('sr-RS')} - 
+                            {new Date(rental.end_date).toLocaleDateString('sr-RS')}
                           </div>
-                          {contract.extension_days && (
-                            <div className="text-sm text-blue-600">
-                              + {contract.extension_days} produženo
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {contract.total_amount.toFixed(2)} KM
-                        </div>
-                        {contract.extension_amount && (
-                          <div className="text-sm text-blue-600">
-                            + {contract.extension_amount.toFixed(2)} KM produžetak
-                          </div>
-                        )}
+                      <div className="text-sm font-medium text-gray-900">
+                        {(typeof rental.total_price === 'number' ? rental.total_price : parseFloat(rental.total_price)).toFixed(2)} KM
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(contract.status)}`}>
-                        {getStatusLabel(contract.status)}
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rental.status)}`}>
+                        {getStatusLabel(rental.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        {contract.pdf_url && (
-                          <button
-                            onClick={() => window.open(contract.pdf_url, '_blank')}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Pogledaj ugovor"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDownloadContract(contract.id)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Preuzmi ugovor"
-                        >
+                      <button
+                        onClick={() => handleDownloadContract(rental.id)}
+                        disabled={downloading === rental.id}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                        title="Preuzmi ugovor"
+                      >
+                        {downloading === rental.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                        ) : (
                           <Download className="h-4 w-4" />
-                        </button>
-                      </div>
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))}
