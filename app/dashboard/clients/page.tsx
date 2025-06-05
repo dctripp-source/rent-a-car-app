@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Phone, Mail, MapPin, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Mail, MapPin, User, CreditCard } from 'lucide-react';
 import { Client } from '@/types';
 import ClientModal from '@/components/ClientModal';
 import { useApi } from '@/hooks/useApi';
@@ -149,25 +149,32 @@ export default function ClientsPage() {
               </div>
 
               <div className="space-y-2 text-sm text-gray-600">
+                {/* Broj lične karte - sada je obavezan i prikazuje se primeiro */}
                 <div className="flex items-center">
-                  <Mail className="h-4 w-4 mr-2" />
-                  {client.email}
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Broj LK:</span>
+                  <span className="ml-1">{client.id_number}</span>
                 </div>
+                
+                {/* Email - sada je opcionalan */}
+                {client.email && (
+                  <div className="flex items-center">
+                    <Mail className="h-4 w-4 mr-2" />
+                    {client.email}
+                  </div>
+                )}
+                
                 {client.phone && (
                   <div className="flex items-center">
                     <Phone className="h-4 w-4 mr-2" />
                     {client.phone}
                   </div>
                 )}
+                
                 {client.address && (
                   <div className="flex items-start">
                     <MapPin className="h-4 w-4 mr-2 mt-0.5" />
                     <span className="break-words">{client.address}</span>
-                  </div>
-                )}
-                {client.id_number && (
-                  <div className="mt-3 pt-3 border-t">
-                    <span className="font-medium">Broj LK:</span> {client.id_number}
                   </div>
                 )}
               </div>

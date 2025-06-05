@@ -43,25 +43,40 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { firebase_uid, name, email, phone, address, id_number } = body;
 
-    // Validate required fields
-    if (!name || !email) {
+    // Validate required fields - PROMJENA: ime i broj lične karte su obavezni
+    if (!name || !id_number) {
       return NextResponse.json(
-        { error: 'Name and email are required' }, 
+        { error: 'Name and ID number are required' }, 
         { status: 400 }
       );
     }
 
-    // Check if client with this email already exists for this user
+    // Check if client with this ID number already exists for this user
     const existingClient = await sql`
       SELECT id FROM clients 
-      WHERE email = ${email} AND user_id = ${userId}
+      WHERE id_number = ${id_number} AND user_id = ${userId}
     `;
 
     if (existingClient.length > 0) {
       return NextResponse.json(
-        { error: 'Client with this email already exists' }, 
+        { error: 'Client with this ID number already exists' }, 
         { status: 409 }
       );
+    }
+
+    // Check if email is provided and if it already exists for this user
+    if (email) {
+      const existingEmailClient = await sql`
+        SELECT id FROM clients 
+        WHERE email = ${email} AND user_id = ${userId}
+      `;
+
+      if (existingEmailClient.length > 0) {
+        return NextResponse.json(
+          { error: 'Client with this email already exists' }, 
+          { status: 409 }
+        );
+      }
     }
 
     const result = await sql`
@@ -70,9 +85,9 @@ export async function POST(request: NextRequest) {
         address, id_number, user_id
       )
       VALUES (
-        ${firebase_uid || userId}, ${name}, ${email}, 
+        ${firebase_uid || userId}, ${name}, ${email || null}, 
         ${phone || null}, ${address || null}, 
-        ${id_number || null}, ${userId}
+        ${id_number}, ${userId}
       )
       RETURNING *
     `;

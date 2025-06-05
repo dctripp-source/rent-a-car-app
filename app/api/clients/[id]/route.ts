@@ -73,10 +73,10 @@ export async function PUT(
 
     const { name, email, phone, address, id_number } = body;
 
-    // Validate required fields
-    if (!name || !email) {
+    // Validate required fields - PROMJENA: ime i broj lične karte su obavezni
+    if (!name || !id_number) {
       return NextResponse.json(
-        { error: 'Name and email are required' }, 
+        { error: 'Name and ID number are required' }, 
         { status: 400 }
       );
     }
@@ -94,28 +94,45 @@ export async function PUT(
       );
     }
 
-    // Check if email is being changed and already exists
-    const emailCheck = await sql`
+    // Check if ID number is being changed and already exists
+    const idNumberCheck = await sql`
       SELECT id FROM clients 
-      WHERE email = ${email} 
+      WHERE id_number = ${id_number} 
         AND user_id = ${userId} 
         AND id != ${id}
     `;
 
-    if (emailCheck.length > 0) {
+    if (idNumberCheck.length > 0) {
       return NextResponse.json(
-        { error: 'Another client with this email already exists' }, 
+        { error: 'Another client with this ID number already exists' }, 
         { status: 409 }
       );
+    }
+
+    // Check if email is being changed and already exists (only if email is provided)
+    if (email) {
+      const emailCheck = await sql`
+        SELECT id FROM clients 
+        WHERE email = ${email} 
+          AND user_id = ${userId} 
+          AND id != ${id}
+      `;
+
+      if (emailCheck.length > 0) {
+        return NextResponse.json(
+          { error: 'Another client with this email already exists' }, 
+          { status: 409 }
+        );
+      }
     }
 
     const result = await sql`
       UPDATE clients 
       SET name = ${name}, 
-          email = ${email}, 
+          email = ${email || null}, 
           phone = ${phone || null}, 
           address = ${address || null}, 
-          id_number = ${id_number || null}
+          id_number = ${id_number}
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;
