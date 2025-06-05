@@ -1,3 +1,4 @@
+// app/api/dashboard/stats/route.ts - Ažurirana verzija
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/verify-token';
@@ -23,11 +24,13 @@ export async function GET(request: NextRequest) {
       vehiclesResult,
       clientsResult,
       activeRentalsResult,
+      reservedRentalsResult,
       monthlyRevenueResult,
       availableVehiclesResult,
       rentedVehiclesResult,
       completedRentalsResult,
-      upcomingReturnsResult
+      upcomingReservationsResult,
+      todaysReservationsResult
     ] = await Promise.all([
       // Total vehicles
       sql`SELECT COUNT(*) as count FROM vehicles WHERE user_id = ${userId}`,
@@ -38,11 +41,15 @@ export async function GET(request: NextRequest) {
       // Active rentals
       sql`SELECT COUNT(*) as count FROM rentals WHERE status = 'active' AND user_id = ${userId}`,
       
-      // Monthly revenue
+      // Reserved rentals
+      sql`SELECT COUNT(*) as count FROM rentals WHERE status = 'reserved' AND user_id = ${userId}`,
+      
+      // Monthly revenue (including both active and completed)
       sql`
         SELECT COALESCE(SUM(total_price), 0) as revenue 
         FROM rentals 
         WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+          AND status IN ('active', 'completed')
           AND user_id = ${userId}
       `,
       
@@ -61,44 +68,66 @@ export async function GET(request: NextRequest) {
           AND user_id = ${userId}
       `,
       
-      // Upcoming returns (next 7 days)
+      // Upcoming reservations (next 7 days)
       sql`
         SELECT COUNT(*) as count 
         FROM rentals 
-        WHERE status = 'active' 
-          AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+        WHERE status = 'reserved' 
+          AND start_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+          AND user_id = ${userId}
+      `,
+      
+      // Today's reservations that need activation
+      sql`
+        SELECT COUNT(*) as count 
+        FROM rentals 
+        WHERE status = 'reserved' 
+          AND start_date = CURRENT_DATE
           AND user_id = ${userId}
       `
     ]);
 
     console.log('Vehicles raw result:', vehiclesResult);
-    console.log('Vehicles count value:', vehiclesResult[0].count);
-    console.log('Vehicles count type:', typeof vehiclesResult[0].count);
+    console.log('Reserved rentals:', reservedRentalsResult);
     
-    console.log('Clients raw result:', clientsResult);
-    console.log('Clients count value:', clientsResult[0].count);
-    console.log('Clients count type:', typeof clientsResult[0].count);
-
     // Calculate additional metrics
     const totalVehicles = parseInt(vehiclesResult[0].count);
     const availableVehicles = parseInt(availableVehiclesResult[0].count);
+    const reservedRentals = parseInt(reservedRentalsResult[0].count);
+    const activeRentals = parseInt(activeRentalsResult[0].count);
+    
     const occupancyRate = totalVehicles > 0 
-      ? ((totalVehicles - availableVehicles) / totalVehicles * 100).toFixed(1)
+      ? (((totalVehicles - availableVehicles) / totalVehicles) * 100).toFixed(1)
       : 0;
+
+    // Revenue projection including reserved rentals
+    const potentialRevenueResult = await sql`
+      SELECT COALESCE(SUM(total_price), 0) as revenue 
+      FROM rentals 
+      WHERE status = 'reserved'
+        AND start_date >= CURRENT_DATE
+        AND user_id = ${userId}
+    `;
 
     return NextResponse.json({
       // Basic stats
       totalVehicles,
       totalClients: parseInt(clientsResult[0].count),
-      activeRentals: parseInt(activeRentalsResult[0].count),
+      activeRentals,
+      reservedRentals,
       monthlyRevenue: parseFloat(monthlyRevenueResult[0].revenue),
       
       // Additional stats
       availableVehicles,
       rentedVehicles: parseInt(rentedVehiclesResult[0].count),
       completedRentalsThisMonth: parseInt(completedRentalsResult[0].count),
-      upcomingReturns: parseInt(upcomingReturnsResult[0].count),
+      upcomingReservations: parseInt(upcomingReservationsResult[0].count),
+      todaysReservations: parseInt(todaysReservationsResult[0].count),
+      potentialRevenue: parseFloat(potentialRevenueResult[0].revenue),
       occupancyRate: parseFloat(occupancyRate as string),
+      
+      // Summary metrics
+      totalActiveBookings: activeRentals + reservedRentals,
       
       // Metadata
       lastUpdated: new Date().toISOString()
@@ -111,4 +140,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

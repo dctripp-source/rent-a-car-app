@@ -1,8 +1,8 @@
-// components/RentalDetailsModal.tsx
+// components/RentalDetailsModal.tsx - Kompletna verzija
 'use client';
 
 import { useState } from 'react';
-import { X, Calendar, User, Car, Download, Plus } from 'lucide-react';
+import { X, Calendar, User, Car, Download, Plus, Play, XCircle, Clock } from 'lucide-react';
 import { Rental } from '@/types';
 import { format } from 'date-fns';
 import { useApi } from '@/hooks/useApi';
@@ -23,6 +23,14 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
   const extensionPrice = extensionDays * (rental.vehicle?.daily_rate || 0);
   const newEndDate = new Date(rental.end_date);
   newEndDate.setDate(newEndDate.getDate() + extensionDays);
+
+  const isReservation = rental.status === 'reserved';
+  const hasDateTime = rental.start_datetime && rental.end_datetime;
+
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return format(date, 'dd.MM.yyyy HH:mm');
+  };
 
   const handleExtend = async () => {
     setLoading(true);
@@ -50,6 +58,60 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
     } catch (error: any) {
       console.error('Error extending rental:', error);
       setError(error.message || 'Greška pri produženju iznajmljivanja');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivateReservation = async () => {
+    if (!confirm('Da li ste sigurni da želite aktivirati ovu rezervaciju?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetchWithAuth(`/api/reservations/${rental.id}/activate`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Greška pri aktivaciji rezervacije');
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error activating reservation:', error);
+      setError(error.message || 'Greška pri aktivaciji rezervacije');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async () => {
+    if (!confirm('Da li ste sigurni da želite otkazati ovu rezervaciju?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetchWithAuth(`/api/reservations/${rental.id}/cancel`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Greška pri otkazivanju rezervacije');
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error cancelling reservation:', error);
+      setError(error.message || 'Greška pri otkazivanju rezervacije');
     } finally {
       setLoading(false);
     }
@@ -110,12 +172,51 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
     }
   };
 
+  const getStatusInfo = () => {
+    switch (rental.status) {
+      case 'reserved':
+        return {
+          label: 'Rezervisano',
+          color: 'bg-yellow-100 text-yellow-800',
+          icon: Clock
+        };
+      case 'active':
+        return {
+          label: 'Aktivno',
+          color: 'bg-green-100 text-green-800',
+          icon: Play
+        };
+      case 'completed':
+        return {
+          label: 'Završeno',
+          color: 'bg-gray-100 text-gray-800',
+          icon: Calendar
+        };
+      case 'cancelled':
+        return {
+          label: 'Otkazano',
+          color: 'bg-red-100 text-red-800',
+          icon: XCircle
+        };
+      default:
+        return {
+          label: rental.status,
+          color: 'bg-gray-100 text-gray-800',
+          icon: Calendar
+        };
+    }
+  };
+
+  const statusInfo = getStatusInfo();
+  const StatusIcon = statusInfo.icon;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            Detalji iznajmljivanja
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <StatusIcon className="h-6 w-6 mr-2 text-gray-600" />
+            {isReservation ? 'Detalji rezervacije' : 'Detalji iznajmljivanja'}
           </h2>
           <button
             onClick={onClose}
@@ -162,32 +263,50 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
             )}
           </div>
 
-          {/* Rental Period */}
+          {/* Period Info */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <Calendar className="h-5 w-5 text-gray-600 mr-2" />
-              <h3 className="font-semibold">Period iznajmljivanja</h3>
+              <h3 className="font-semibold">
+                {isReservation ? 'Period rezervacije' : 'Period iznajmljivanja'}
+              </h3>
             </div>
-            <p className="text-sm">
-              Od: <span className="font-medium">{format(new Date(rental.start_date), 'dd.MM.yyyy')}</span>
-            </p>
-            <p className="text-sm">
-              Do: <span className="font-medium">{format(new Date(rental.end_date), 'dd.MM.yyyy')}</span>
-            </p>
+            
+            {hasDateTime ? (
+              <>
+                <p className="text-sm">
+                  Od: <span className="font-medium">{formatDateTime(rental.start_datetime!)}</span>
+                </p>
+                <p className="text-sm">
+                  Do: <span className="font-medium">{formatDateTime(rental.end_datetime!)}</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm">
+                  Od: <span className="font-medium">{format(new Date(rental.start_date), 'dd.MM.yyyy')}</span>
+                </p>
+                <p className="text-sm">
+                  Do: <span className="font-medium">{format(new Date(rental.end_date), 'dd.MM.yyyy')}</span>
+                </p>
+              </>
+            )}
+            
             <p className="text-sm mt-2">
               Status: 
-              <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                rental.status === 'active' 
-                  ? 'bg-green-100 text-green-800'
-                  : rental.status === 'completed'
-                  ? 'bg-gray-100 text-gray-800'
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {rental.status === 'active' ? 'Aktivno' : 
-                 rental.status === 'completed' ? 'Završeno' : 'Otkazano'}
+              <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.color}`}>
+                {statusInfo.label}
               </span>
             </p>
           </div>
+
+          {/* Notes for reservations */}
+          {rental.notes && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Napomene</h3>
+              <p className="text-sm text-gray-700">{rental.notes}</p>
+            </div>
+          )}
 
           {/* Price */}
           <div className="bg-blue-50 p-4 rounded-lg">
@@ -197,7 +316,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
             </p>
           </div>
 
-          {/* Extension Section */}
+          {/* Extension Section - only for active rentals */}
           {rental.status === 'active' && !showExtension && (
             <button
               onClick={() => setShowExtension(true)}
@@ -266,38 +385,64 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
           )}
 
           {/* Actions */}
-          <div className="flex space-x-3">
-            <button
-              onClick={handleGeneratePDF}
-              disabled={downloadingPdf}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {downloadingPdf ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Generisanje...
-                </>
-              ) : (
-                <>
-                  <Download className="h-5 w-5 mr-2" />
-                  Generiši ugovor (PDF)
-                </>
-              )}
-            </button>
-            
-            {rental.status === 'active' && (
-              <button
-                onClick={handleCompleteRental}
-                disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Završavanje...' : 'Završi iznajmljivanje'}
-              </button>
+          <div className="flex flex-col space-y-3">
+            {/* Reservation specific actions */}
+            {isReservation && (
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleActivateReservation}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Play className="h-5 w-5 mr-2" />
+                  {loading ? 'Aktiviranje...' : 'Aktiviraj rezervaciju'}
+                </button>
+                
+                <button
+                  onClick={handleCancelReservation}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <XCircle className="h-5 w-5 mr-2" />
+                  {loading ? 'Otkazivanje...' : 'Otkaži rezervaciju'}
+                </button>
+              </div>
             )}
+
+            {/* Standard actions */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleGeneratePDF}
+                disabled={downloadingPdf}
+                className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Generisanje...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-5 w-5 mr-2" />
+                    Generiši ugovor (PDF)
+                  </>
+                )}
+              </button>
+              
+              {rental.status === 'active' && (
+                <button
+                  onClick={handleCompleteRental}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Završavanje...' : 'Završi iznajmljivanje'}
+                </button>
+              )}
+            </div>
             
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
             >
               Zatvori
             </button>

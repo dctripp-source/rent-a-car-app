@@ -1,4 +1,4 @@
-// app/api/rentals/route.ts - Ažurirana verzija
+// app/api/reservations/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/verify-token';
@@ -14,8 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all rentals including reservations
-    const rentals = await sql`
+    const reservations = await sql`
       SELECT 
         r.*,
         v.brand, v.model, v.year, v.registration_number, v.daily_rate,
@@ -23,53 +22,45 @@ export async function GET(request: NextRequest) {
       FROM rentals r
       JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
       JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
-      WHERE r.user_id = ${userId}
-      ORDER BY 
-        CASE 
-          WHEN r.status = 'reserved' THEN 1
-          WHEN r.status = 'active' THEN 2
-          WHEN r.status = 'completed' THEN 3
-          WHEN r.status = 'cancelled' THEN 4
-          ELSE 5
-        END,
-        r.start_date DESC
+      WHERE r.user_id = ${userId} AND r.status = 'reserved'
+      ORDER BY r.start_date ASC
     `;
 
     // Transform the flat data into nested structure
-    const transformedRentals = rentals.map(rental => ({
-      id: rental.id,
-      vehicle_id: rental.vehicle_id,
-      client_id: rental.client_id,
-      start_date: rental.start_date,
-      end_date: rental.end_date,
-      start_datetime: rental.start_datetime,
-      end_datetime: rental.end_datetime,
-      total_price: parseFloat(rental.total_price),
-      status: rental.status,
-      notes: rental.notes,
-      created_at: rental.created_at,
-      updated_at: rental.updated_at,
+    const transformedReservations = reservations.map(reservation => ({
+      id: reservation.id,
+      vehicle_id: reservation.vehicle_id,
+      client_id: reservation.client_id,
+      start_date: reservation.start_date,
+      end_date: reservation.end_date,
+      start_datetime: reservation.start_datetime,
+      end_datetime: reservation.end_datetime,
+      total_price: parseFloat(reservation.total_price),
+      status: reservation.status,
+      notes: reservation.notes,
+      created_at: reservation.created_at,
+      updated_at: reservation.updated_at,
       vehicle: {
-        id: rental.vehicle_id,
-        brand: rental.brand,
-        model: rental.model,
-        year: rental.year,
-        registration_number: rental.registration_number,
-        daily_rate: parseFloat(rental.daily_rate),
+        id: reservation.vehicle_id,
+        brand: reservation.brand,
+        model: reservation.model,
+        year: reservation.year,
+        registration_number: reservation.registration_number,
+        daily_rate: parseFloat(reservation.daily_rate),
       },
       client: {
-        id: rental.client_id,
-        name: rental.client_name,
-        email: rental.client_email,
-        phone: rental.client_phone,
+        id: reservation.client_id,
+        name: reservation.client_name,
+        email: reservation.client_email,
+        phone: reservation.client_phone,
       },
     }));
 
-    return NextResponse.json(transformedRentals);
+    return NextResponse.json(transformedReservations);
   } catch (error) {
-    console.error('Error fetching rentals:', error);
+    console.error('Error fetching reservations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch rentals' }, 
+      { error: 'Failed to fetch reservations' }, 
       { status: 500 }
     );
   }
@@ -87,12 +78,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { vehicle_id, client_id, start_date, end_date, total_price } = body;
+    const { 
+      vehicle_id, 
+      client_id, 
+      start_date, 
+      end_date, 
+      start_datetime,
+      end_datetime,
+      total_price,
+      notes 
+    } = body;
 
     // Validate required fields
     if (!vehicle_id || !client_id || !start_date || !end_date || !total_price) {
       return NextResponse.json(
-        { error: 'All fields are required' }, 
+        { error: 'All required fields must be provided' }, 
         { status: 400 }
       );
     }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for overlapping rentals (including reservations)
+    // Check for overlapping reservations/rentals
     const overlapCheck = await sql`
       SELECT id FROM rentals 
       WHERE vehicle_id = ${vehicle_id} 
@@ -154,47 +154,31 @@ export async function POST(request: NextRequest) {
 
     if (overlapCheck.length > 0) {
       return NextResponse.json(
-        { error: 'Vehicle is already rented or reserved for this period' }, 
+        { error: 'Vehicle is already booked for this period' }, 
         { status: 409 }
       );
     }
 
-    // Start transaction
-    try {
-      // Update vehicle status
-      await sql`
-        UPDATE vehicles 
-        SET status = 'rented' 
-        WHERE id = ${vehicle_id} AND user_id = ${userId}
-      `;
+    // Create reservation
+    const result = await sql`
+      INSERT INTO rentals (
+        vehicle_id, client_id, start_date, end_date, 
+        start_datetime, end_datetime, total_price, 
+        status, notes, user_id
+      )
+      VALUES (
+        ${vehicle_id}, ${client_id}, ${start_date}, 
+        ${end_date}, ${start_datetime || null}, ${end_datetime || null}, 
+        ${total_price}, 'reserved', ${notes || null}, ${userId}
+      )
+      RETURNING *
+    `;
 
-      // Create rental
-      const result = await sql`
-        INSERT INTO rentals (
-          vehicle_id, client_id, start_date, end_date, 
-          total_price, status, user_id
-        )
-        VALUES (
-          ${vehicle_id}, ${client_id}, ${start_date}, 
-          ${end_date}, ${total_price}, 'active', ${userId}
-        )
-        RETURNING *
-      `;
-
-      return NextResponse.json(result[0], { status: 201 });
-    } catch (error) {
-      // Rollback vehicle status on error
-      await sql`
-        UPDATE vehicles 
-        SET status = 'available' 
-        WHERE id = ${vehicle_id} AND user_id = ${userId}
-      `;
-      throw error;
-    }
+    return NextResponse.json(result[0], { status: 201 });
   } catch (error) {
-    console.error('Error creating rental:', error);
+    console.error('Error creating reservation:', error);
     return NextResponse.json(
-      { error: 'Failed to create rental' }, 
+      { error: 'Failed to create reservation' }, 
       { status: 500 }
     );
   }
