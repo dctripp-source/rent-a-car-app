@@ -1,7 +1,7 @@
 // app/api/rentals/[id]/contract/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
-import { generateContract } from '@/lib/pdf-generator';
+import { generateContract } from '@/lib/jspdf-contract-generator';
 import { verifyToken } from '@/lib/verify-token';
 
 export async function GET(
@@ -75,12 +75,17 @@ export async function GET(
       client_id_number: rental[0].client_id_number || undefined,
     };
 
+    // Generišite PDF buffer
     const pdfBuffer = await generateContract(contractData);
 
-    return new NextResponse(pdfBuffer, {
+    // Konvertujte u Buffer ako je potrebno
+    const buffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+
+    return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="ugovor-${rentalId}.pdf"`,
+        'Cache-Control': 'no-cache', // Dodajte ovo da izbegnete keširanje
       },
     });
   } catch (error) {
