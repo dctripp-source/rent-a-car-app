@@ -285,12 +285,36 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{data.client_phone || 'N/A'}</Text>
             </View>
             
-            {/* Red 2: Email i broj LK */}
+            {/* Red 2: broj LK i datum izdavanja */}
             <View style={styles.infoRow}>
-              <Text style={styles.labelLeft}>Email:</Text>
-              <Text style={styles.valueLeft}>{data.client_email}</Text>
-              <Text style={styles.labelRight}>Br. licne karte:</Text>
-              <Text style={styles.valueRight}>{data.client_id_number || 'N/A'}</Text>
+              <Text style={styles.labelLeft}>Br. lične karte:</Text>
+              <Text style={styles.valueLeft}>{data.client_id_number}</Text>
+              <Text style={styles.labelRight}>Datum izdavanja:</Text>
+              <Text style={styles.valueRight}>{data.id_card_issue_date || 'N/A'}</Text>
+            </View>
+
+            {/* Red 3: Validno do i izdato */}
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Vrijedi do:</Text>
+              <Text style={styles.valueLeft}>{data.id_card_valid_until}</Text>
+              <Text style={styles.labelRight}>Izdato od:</Text>
+              <Text style={styles.valueRight}>{data.id_card_issued_by || 'N/A'}</Text>
+            </View>
+
+            {/* Red 3: broj vozacke  i datum izdavanja */}
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Br. vozačke dozvole:</Text>
+              <Text style={styles.valueLeft}>{data.driving_license_number}</Text>
+              <Text style={styles.labelRight}>Datum izdavanja:</Text>
+              <Text style={styles.valueRight}>{data.driving_license_issue_date || 'N/A'}</Text>
+            </View>
+
+            {/* Red 3: Validno do i izdato */}
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Vrijedi do:</Text>
+              <Text style={styles.valueLeft}>{data.driving_license_valid_until}</Text>
+              <Text style={styles.labelRight}>Izdato od:</Text>
+              <Text style={styles.valueRight}>{data.driving_license_issued_by || 'N/A'}</Text>
             </View>
             
             {/* Red 3: Adresa - puna širina */}
