@@ -1,9 +1,9 @@
-// app/api/reservations/[id]/activate/route.ts
+// app/api/reservations/[id]/cancel/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/verify-token';
 
-export async function POST(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -34,40 +34,27 @@ export async function POST(
 
     if (reservation.length === 0) {
       return NextResponse.json(
-        { error: 'Reservation not found or already activated' }, 
+        { error: 'Reservation not found' }, 
         { status: 404 }
       );
     }
 
-    // Start transaction
-    try {
-      // Update reservation status to active
-      await sql`
-        UPDATE rentals 
-        SET status = 'active',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${reservationId} AND user_id = ${userId}
-      `;
+    // Update reservation status to cancelled
+    await sql`
+      UPDATE rentals 
+      SET status = 'cancelled',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${reservationId} AND user_id = ${userId}
+    `;
 
-      // Update vehicle status to rented
-      await sql`
-        UPDATE vehicles 
-        SET status = 'rented'
-        WHERE id = ${reservation[0].vehicle_id} AND user_id = ${userId}
-      `;
-
-      return NextResponse.json({ 
-        success: true,
-        message: 'Reservation activated successfully'
-      });
-    } catch (error) {
-      console.error('Error activating reservation:', error);
-      throw error;
-    }
+    return NextResponse.json({ 
+      success: true,
+      message: 'Reservation cancelled successfully'
+    });
   } catch (error) {
-    console.error('Error activating reservation:', error);
+    console.error('Error cancelling reservation:', error);
     return NextResponse.json(
-      { error: 'Failed to activate reservation' }, 
+      { error: 'Failed to cancel reservation' }, 
       { status: 500 }
     );
   }

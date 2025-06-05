@@ -123,11 +123,14 @@ export default function ReservationModal({ vehicles, selectedSlot, onClose }: Re
       }
 
       const reservationData = {
-        ...formData,
-        total_price: totalPrice,
-        status: 'reserved',
+        vehicle_id: parseInt(formData.vehicle_id),
+        client_id: parseInt(formData.client_id),
+        start_date: formData.start_date,
+        end_date: formData.end_date,
         start_datetime: formatDateTime(formData.start_date, formData.start_time),
         end_datetime: formatDateTime(formData.end_date, formData.end_time),
+        total_price: totalPrice,
+        notes: formData.notes,
       };
 
       const response = await fetchWithAuth('/api/reservations', {
