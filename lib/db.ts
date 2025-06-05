@@ -12,7 +12,11 @@ CREATE TABLE IF NOT EXISTS vehicles (
   registration_number VARCHAR(50) UNIQUE NOT NULL,
   daily_rate DECIMAL(10, 2) NOT NULL,
   status VARCHAR(50) DEFAULT 'available',
+  fuel_type VARCHAR(50) DEFAULT 'gasoline',
+  transmission VARCHAR(50) DEFAULT 'manual',
+  seat_count INTEGER DEFAULT 5,
   image_url TEXT,
+  user_id VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,11 +25,20 @@ CREATE TABLE IF NOT EXISTS clients (
   id SERIAL PRIMARY KEY,
   firebase_uid VARCHAR(255) UNIQUE,
   name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) NOT NULL,
   phone VARCHAR(50),
   address TEXT,
   id_number VARCHAR(50),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  driving_license_number VARCHAR(50) NOT NULL,
+  id_card_issue_date DATE,
+  id_card_valid_until DATE,
+  id_card_issued_by VARCHAR(255),
+  driving_license_issue_date DATE,
+  driving_license_valid_until DATE,
+  driving_license_issued_by VARCHAR(255),
+  user_id VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(email, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS rentals (
@@ -36,6 +49,7 @@ CREATE TABLE IF NOT EXISTS rentals (
   end_date DATE NOT NULL,
   total_price DECIMAL(10, 2) NOT NULL,
   status VARCHAR(50) DEFAULT 'active',
+  user_id VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -47,4 +61,12 @@ CREATE TABLE IF NOT EXISTS rental_extensions (
   extension_price DECIMAL(10, 2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Dodavanje indexa za performanse
+CREATE INDEX IF NOT EXISTS idx_vehicles_user_id ON vehicles(user_id);
+CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
+CREATE INDEX IF NOT EXISTS idx_rentals_user_id ON rentals(user_id);
+CREATE INDEX IF NOT EXISTS idx_rentals_vehicle_id ON rentals(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_rentals_client_id ON rentals(client_id);
+CREATE INDEX IF NOT EXISTS idx_rentals_status ON rentals(status);
 `;

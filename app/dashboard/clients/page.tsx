@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Phone, Mail, MapPin, User, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Mail, MapPin, User, CreditCard, Car } from 'lucide-react';
 import { Client } from '@/types';
 import ClientModal from '@/components/ClientModal';
 import { useApi } from '@/hooks/useApi';
@@ -78,6 +78,11 @@ export default function ClientsPage() {
     fetchClients();
   };
 
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('sr-RS');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -148,35 +153,72 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-600">
-                {/* Broj lične karte - sada je obavezan i prikazuje se primeiro */}
-                <div className="flex items-center">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  <span className="font-medium">Broj LK:</span>
-                  <span className="ml-1">{client.id_number}</span>
-                </div>
-                
-                {/* Email - sada je opcionalan */}
-                {client.email && (
+              <div className="space-y-3 text-sm text-gray-600">
+                {/* Osnovni kontakt */}
+                <div className="space-y-2">
                   <div className="flex items-center">
                     <Mail className="h-4 w-4 mr-2" />
                     {client.email}
                   </div>
-                )}
-                
-                {client.phone && (
-                  <div className="flex items-center">
-                    <Phone className="h-4 w-4 mr-2" />
-                    {client.phone}
+                  {client.phone && (
+                    <div className="flex items-center">
+                      <Phone className="h-4 w-4 mr-2" />
+                      {client.phone}
+                    </div>
+                  )}
+                  {client.address && (
+                    <div className="flex items-start">
+                      <MapPin className="h-4 w-4 mr-2 mt-0.5" />
+                      <span className="break-words">{client.address}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lična karta */}
+                {(client.id_number || client.id_card_valid_until) && (
+                  <div className="pt-3 border-t">
+                    <div className="flex items-center mb-2">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Lična karta</span>
+                    </div>
+                    {client.id_number && (
+                      <div className="ml-6 text-xs">
+                        Broj: {client.id_number}
+                      </div>
+                    )}
+                    {client.id_card_valid_until && (
+                      <div className="ml-6 text-xs">
+                        Vrijedi do: {formatDate(client.id_card_valid_until)}
+                      </div>
+                    )}
+                    {client.id_card_issued_by && (
+                      <div className="ml-6 text-xs">
+                        Izdata od: {client.id_card_issued_by}
+                      </div>
+                    )}
                   </div>
                 )}
-                
-                {client.address && (
-                  <div className="flex items-start">
-                    <MapPin className="h-4 w-4 mr-2 mt-0.5" />
-                    <span className="break-words">{client.address}</span>
+
+                {/* Vozačka dozvola */}
+                <div className="pt-3 border-t">
+                  <div className="flex items-center mb-2">
+                    <Car className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Vozačka dozvola</span>
                   </div>
-                )}
+                  <div className="ml-6 text-xs">
+                    Broj: {client.driving_license_number}
+                  </div>
+                  {client.driving_license_valid_until && (
+                    <div className="ml-6 text-xs">
+                      Vrijedi do: {formatDate(client.driving_license_valid_until)}
+                    </div>
+                  )}
+                  {client.driving_license_issued_by && (
+                    <div className="ml-6 text-xs">
+                      Izdata od: {client.driving_license_issued_by}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -71,12 +71,32 @@ export async function PUT(
       );
     }
 
-    const { name, email, phone, address, id_number } = body;
+    const { 
+      name, 
+      email, 
+      phone, 
+      address, 
+      id_number,
+      driving_license_number,
+      id_card_issue_date,
+      id_card_valid_until,
+      id_card_issued_by,
+      driving_license_issue_date,
+      driving_license_valid_until,
+      driving_license_issued_by
+    } = body;
 
-    // Validate required fields - PROMJENA: ime i broj lične karte su obavezni
-    if (!name || !id_number) {
+    // Validate required fields
+    if (!name || !email) {
       return NextResponse.json(
-        { error: 'Name and ID number are required' }, 
+        { error: 'Name and email are required' }, 
+        { status: 400 }
+      );
+    }
+
+    if (!driving_license_number) {
+      return NextResponse.json(
+        { error: 'Driving license number is required' }, 
         { status: 400 }
       );
     }
@@ -94,45 +114,35 @@ export async function PUT(
       );
     }
 
-    // Check if ID number is being changed and already exists
-    const idNumberCheck = await sql`
+    // Check if email is being changed and already exists
+    const emailCheck = await sql`
       SELECT id FROM clients 
-      WHERE id_number = ${id_number} 
+      WHERE email = ${email} 
         AND user_id = ${userId} 
         AND id != ${id}
     `;
 
-    if (idNumberCheck.length > 0) {
+    if (emailCheck.length > 0) {
       return NextResponse.json(
-        { error: 'Another client with this ID number already exists' }, 
+        { error: 'Another client with this email already exists' }, 
         { status: 409 }
       );
-    }
-
-    // Check if email is being changed and already exists (only if email is provided)
-    if (email) {
-      const emailCheck = await sql`
-        SELECT id FROM clients 
-        WHERE email = ${email} 
-          AND user_id = ${userId} 
-          AND id != ${id}
-      `;
-
-      if (emailCheck.length > 0) {
-        return NextResponse.json(
-          { error: 'Another client with this email already exists' }, 
-          { status: 409 }
-        );
-      }
     }
 
     const result = await sql`
       UPDATE clients 
       SET name = ${name}, 
-          email = ${email || null}, 
+          email = ${email}, 
           phone = ${phone || null}, 
           address = ${address || null}, 
-          id_number = ${id_number}
+          id_number = ${id_number || null},
+          driving_license_number = ${driving_license_number},
+          id_card_issue_date = ${id_card_issue_date || null},
+          id_card_valid_until = ${id_card_valid_until || null},
+          id_card_issued_by = ${id_card_issued_by || null},
+          driving_license_issue_date = ${driving_license_issue_date || null},
+          driving_license_valid_until = ${driving_license_valid_until || null},
+          driving_license_issued_by = ${driving_license_issued_by || null}
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;

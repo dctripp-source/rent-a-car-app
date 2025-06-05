@@ -41,53 +41,65 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { firebase_uid, name, email, phone, address, id_number } = body;
+    const { 
+      firebase_uid, 
+      name, 
+      email, 
+      phone, 
+      address, 
+      id_number,
+      driving_license_number,
+      id_card_issue_date,
+      id_card_valid_until,
+      id_card_issued_by,
+      driving_license_issue_date,
+      driving_license_valid_until,
+      driving_license_issued_by
+    } = body;
 
-    // Validate required fields - PROMJENA: ime i broj lične karte su obavezni
-    if (!name || !id_number) {
+    // Validate required fields
+    if (!name || !email) {
       return NextResponse.json(
-        { error: 'Name and ID number are required' }, 
+        { error: 'Name and email are required' }, 
         { status: 400 }
       );
     }
 
-    // Check if client with this ID number already exists for this user
+    if (!driving_license_number) {
+      return NextResponse.json(
+        { error: 'Driving license number is required' }, 
+        { status: 400 }
+      );
+    }
+
+    // Check if client with this email already exists for this user
     const existingClient = await sql`
       SELECT id FROM clients 
-      WHERE id_number = ${id_number} AND user_id = ${userId}
+      WHERE email = ${email} AND user_id = ${userId}
     `;
 
     if (existingClient.length > 0) {
       return NextResponse.json(
-        { error: 'Client with this ID number already exists' }, 
+        { error: 'Client with this email already exists' }, 
         { status: 409 }
       );
-    }
-
-    // Check if email is provided and if it already exists for this user
-    if (email) {
-      const existingEmailClient = await sql`
-        SELECT id FROM clients 
-        WHERE email = ${email} AND user_id = ${userId}
-      `;
-
-      if (existingEmailClient.length > 0) {
-        return NextResponse.json(
-          { error: 'Client with this email already exists' }, 
-          { status: 409 }
-        );
-      }
     }
 
     const result = await sql`
       INSERT INTO clients (
         firebase_uid, name, email, phone, 
-        address, id_number, user_id
+        address, id_number, driving_license_number,
+        id_card_issue_date, id_card_valid_until, id_card_issued_by,
+        driving_license_issue_date, driving_license_valid_until, driving_license_issued_by,
+        user_id
       )
       VALUES (
-        ${firebase_uid || userId}, ${name}, ${email || null}, 
+        ${firebase_uid || userId}, ${name}, ${email}, 
         ${phone || null}, ${address || null}, 
-        ${id_number}, ${userId}
+        ${id_number || null}, ${driving_license_number},
+        ${id_card_issue_date || null}, ${id_card_valid_until || null}, ${id_card_issued_by || null},
+        ${driving_license_issue_date || null}, ${driving_license_valid_until || null}, ${driving_license_issued_by || null},
+        ${userId}
       )
       RETURNING *
     `;
