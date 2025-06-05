@@ -1,6 +1,7 @@
+// app/api/vehicles/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
-import { uploadToS3 } from '@/lib/aws-s3';
+import { uploadToS3Optimized } from '@/lib/aws-s3';
 import { verifyToken } from '@/lib/verify-token';
 
 export async function GET(request: NextRequest) {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
     // Validate enum values
     const validFuelTypes = ['gasoline', 'diesel', 'hybrid', 'electric'];
     const validTransmissions = ['manual', 'automatic'];
+    const validStatuses = ['available', 'rented', 'maintenance'];
     
     if (!validFuelTypes.includes(fuel_type)) {
       return NextResponse.json(
@@ -81,6 +83,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status' }, 
+        { status: 400 }
+      );
+    }
+    
     if (seat_count < 2 || seat_count > 20) {
       return NextResponse.json(
         { error: 'Seat count must be between 2 and 20' }, 
@@ -88,15 +97,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if registration number already exists for this user
+    const existingVehicle = await sql`
+      SELECT id FROM vehicles 
+      WHERE registration_number = ${registration_number} 
+        AND user_id = ${userId}
+    `;
+
+    if (existingVehicle.length > 0) {
+      return NextResponse.json(
+        { error: 'Vehicle with this registration number already exists' }, 
+        { status: 409 }
+      );
+    }
+
     let image_url = null;
+    let thumbnail_url = null;
+    let image_metadata = null;
+    
     const imageFile = formData.get('image') as File;
     
     if (imageFile && imageFile.size > 0) {
       try {
-        image_url = await uploadToS3(imageFile);
+        // Validate image file
+        if (!imageFile.type.startsWith('image/')) {
+          return NextResponse.json(
+            { error: 'Invalid file type. Only images are allowed.' }, 
+            { status: 400 }
+          );
+        }
+
+        // Check file size (max 10MB for original)
+        if (imageFile.size > 10 * 1024 * 1024) {
+          return NextResponse.json(
+            { error: 'Image file too large. Maximum size is 10MB.' }, 
+            { status: 400 }
+          );
+        }
+
+        // Upload and optimize image
+        const uploadResult = await uploadToS3Optimized(imageFile, {
+          optimize: true,
+          generateThumbnail: true,
+          maxWidth: 1200,
+          maxHeight: 800,
+          quality: 85,
+          targetSizeKB: 400
+        });
+
+        image_url = uploadResult.url;
+        thumbnail_url = uploadResult.thumbnailUrl;
+        image_metadata = {
+          originalSize: uploadResult.originalSize,
+          optimizedSize: uploadResult.optimizedSize,
+          compressionRatio: uploadResult.compressionRatio
+        };
+
+        console.log('Image uploaded successfully:', {
+          originalSize: `${Math.round(uploadResult.originalSize / 1024)}KB`,
+          optimizedSize: `${Math.round(uploadResult.optimizedSize / 1024)}KB`,
+          savings: `${uploadResult.compressionRatio}%`
+        });
+
       } catch (uploadError) {
         console.error('Error uploading image:', uploadError);
-        // Continue without image
+        return NextResponse.json(
+          { error: 'Failed to upload image. Please try again.' }, 
+          { status: 500 }
+        );
       }
     }
 
@@ -104,12 +172,13 @@ export async function POST(request: NextRequest) {
       INSERT INTO vehicles (
         brand, model, year, registration_number, 
         daily_rate, status, fuel_type, transmission, 
-        seat_count, image_url, user_id
+        seat_count, image_url, thumbnail_url, image_metadata, user_id
       )
       VALUES (
         ${brand}, ${model}, ${year}, ${registration_number}, 
         ${daily_rate}, ${status}, ${fuel_type}, ${transmission}, 
-        ${seat_count}, ${image_url}, ${userId}
+        ${seat_count}, ${image_url}, ${thumbnail_url}, 
+        ${image_metadata ? JSON.stringify(image_metadata) : null}, ${userId}
       )
       RETURNING *
     `;
