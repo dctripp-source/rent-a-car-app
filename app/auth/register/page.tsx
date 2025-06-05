@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { UserPlus, Mail, Lock, User, Car } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Car, CreditCard } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    id_number: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!formData.id_number.trim()) {
+      setError('Broj lične karte je obavezan');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -67,7 +73,7 @@ export default function RegisterPage() {
       const token = await userCredential.user.getIdToken();
       console.log('Got auth token');
 
-      // Create client in PostgreSQL
+      // Create client in PostgreSQL - PROMJENA: dodao id_number
       const response = await fetch('/api/clients', {
         method: 'POST',
         headers: { 
@@ -78,6 +84,7 @@ export default function RegisterPage() {
           firebase_uid: userCredential.user.uid,
           name: formData.name,
           email: formData.email,
+          id_number: formData.id_number,
         }),
       });
 
@@ -121,203 +128,137 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Car className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Novera Rent
-          </h1>
-          <p className="text-gray-600">
-            Kreirajte novi nalog
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">RentCar</h1>
+          <p className="text-gray-600">Kreirajte svoj nalog</p>
         </div>
 
-        {/* Forma */}
+        {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error poruka */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
                 {error}
               </div>
             )}
 
-            {/* Ime i prezime */}
             <div>
-              <label 
-                htmlFor="name" 
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Ime i prezime
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ime i prezime <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
+                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="name"
-                  name="name"
                   type="text"
-                  required
+                  name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Petar Petrović"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Vaše ime i prezime"
                 />
               </div>
             </div>
 
-            {/* Email */}
             <div>
-              <label 
-                htmlFor="email" 
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Email adresa
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Broj lične karte <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+                <CreditCard className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  type="text"
+                  name="id_number"
+                  value={formData.id_number}
+                  onChange={handleChange}
                   required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="123456789"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email adresa <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="vas@email.com"
                 />
               </div>
             </div>
 
-            {/* Lozinka */}
             <div>
-              <label 
-                htmlFor="password" 
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Lozinka
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lozinka <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="password"
-                  name="password"
                   type="password"
-                  autoComplete="new-password"
-                  required
+                  name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="••••••••"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Najmanje 6 karaktera"
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Najmanje 6 karaktera
-              </p>
             </div>
 
-            {/* Potvrdi lozinku */}
             <div>
-              <label 
-                htmlFor="confirmPassword" 
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Potvrdite lozinku
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Potvrdite lozinku <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="confirmPassword"
-                  name="confirmPassword"
                   type="password"
-                  autoComplete="new-password"
-                  required
+                  name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="••••••••"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ponovite lozinku"
                 />
               </div>
             </div>
 
-            {/* Uslovi korišćenja */}
-            <div className="flex items-start">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                Slažem se sa{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500">
-                  uslovima korišćenja
-                </a>{' '}
-                i{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500">
-                  politikom privatnosti
-                </a>
-              </label>
-            </div>
-
-            {/* Submit dugme */}
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Kreiranje naloga...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Registrujte se
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                  Kreiram nalog...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  Kreiraj nalog
+                </>
+              )}
+            </button>
           </form>
 
-          {/* Divider */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Ili</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Link za prijavu */}
           <div className="mt-6 text-center">
-            <span className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600">
               Već imate nalog?{' '}
-              <Link 
-                href="/auth/login" 
-                className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-              >
+              <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
                 Prijavite se
               </Link>
-            </span>
+            </p>
           </div>
         </div>
-
-        {/* Footer info */}
-        <p className="mt-8 text-center text-xs text-gray-500">
-          © 2025 Novera Rent. Sva prava zadržana. | Made by QODE VISION
-        </p>
       </div>
     </div>
   );
