@@ -84,7 +84,9 @@ export default function DashboardLayout({
     { href: '/dashboard/calendar', label: 'Kalendar', icon: Calendar },
     { href: '/dashboard/vehicles', label: 'Vozila', icon: Car },
     { href: '/dashboard/clients', label: 'Klijenti', icon: Users },
-    { href: '/dashboard/contract-settings', label: 'Podešavanje ugovora', icon: FileText },
+    
+    { href: '/dashboard/contracts', label: 'Ugovori', icon: FileText }, // Dodano ako nije postojalo
+  { href: '/dashboard/settings', label: 'Podešavanja', icon: Settings }, // NOVO
   ];
 
   return (

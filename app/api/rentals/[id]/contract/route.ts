@@ -32,35 +32,37 @@ export async function GET(
     console.log('Fetching data for rental ID:', rentalId, 'User:', userId);
 
     // Get rental details with vehicle and client info
-    const [rental, companySettings] = await Promise.all([
-      sql`
-        SELECT 
-          r.id,
-          r.start_date,
-          r.end_date,
-          r.total_price,
-          v.brand, 
-          v.model, 
-          v.year, 
-          v.registration_number, 
-          v.daily_rate,
-          c.name as client_name, 
-          c.email as client_email, 
-          c.phone as client_phone,
-          c.address as client_address, 
-          c.id_number as client_id_number
-        FROM rentals r
-        JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
-        JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
-        WHERE r.id = ${rentalId} AND r.user_id = ${userId}
-      `,
-      // Get company settings
-      sql`
-        SELECT * FROM company_settings 
-        WHERE user_id = ${userId}
-        LIMIT 1
-      `
-    ]);
+    const rental = await sql`
+      SELECT 
+        r.id,
+        r.start_date,
+        r.end_date,
+        r.total_price,
+        v.brand, 
+        v.model, 
+        v.year, 
+        v.registration_number, 
+        v.daily_rate,
+        c.name as client_name, 
+        c.email as client_email, 
+        c.phone as client_phone,
+        c.address as client_address, 
+        c.id_number as client_id_number
+      FROM rentals r
+      JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
+      JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
+      WHERE r.id = ${rentalId} AND r.user_id = ${userId}
+    `;
+
+    // Get company settings separately with detailed logging
+    console.log('Fetching company settings for user:', userId);
+    const companySettings = await sql`
+      SELECT * FROM company_settings 
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `;
+    console.log('Company settings query result:', companySettings);
+    console.log('Company settings length:', companySettings.length);
 
     if (rental.length === 0) {
       console.log('Rental not found for ID:', rentalId);
@@ -71,26 +73,34 @@ export async function GET(
     }
 
     console.log('Rental data retrieved successfully');
-    console.log('Company settings:', companySettings.length > 0 ? 'Found' : 'Using defaults');
 
     // Prepare company data (use defaults if not set)
-    const company = companySettings.length > 0 ? {
-      company_name: companySettings[0].company_name,
-      contact_person: companySettings[0].contact_person,
-      address: companySettings[0].address,
-      phone: companySettings[0].phone,
-      email: companySettings[0].email,
-      jib: companySettings[0].jib,
-      bank_account: companySettings[0].bank_account,
-    } : {
-      company_name: 'NOVERA RENT d.o.o.',
-      contact_person: 'Desanka Jandric',
-      address: 'Rade Kondica 6c, Prijedor',
-      phone: '+387 66 11 77 86',
-      email: 'novera.rent@gmail.com',
-      jib: '4512970750008',
-      bank_account: '562-099-8180-8643-85'
-    };
+    let company;
+    if (companySettings.length > 0) {
+      console.log('Using database company settings:', companySettings[0].company_name);
+      company = {
+        company_name: companySettings[0].company_name,
+        contact_person: companySettings[0].contact_person,
+        address: companySettings[0].address,
+        phone: companySettings[0].phone,
+        email: companySettings[0].email,
+        jib: companySettings[0].jib,
+        bank_account: companySettings[0].bank_account,
+      };
+    } else {
+      console.log('No company settings found, using defaults');
+      company = {
+        company_name: 'NOVERA RENT d.o.o.',
+        contact_person: 'Desanka Jandric',
+        address: 'Rade Kondica 6c, Prijedor',
+        phone: '+387 66 11 77 86',
+        email: 'novera.rent@gmail.com',
+        jib: '4512970750008',
+        bank_account: '562-099-8180-8643-85'
+      };
+    }
+
+    console.log('Final company data for PDF:', company);
 
     // Prepare contract data with company info
     const contractData = {
