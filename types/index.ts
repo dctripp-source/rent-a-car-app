@@ -1,4 +1,4 @@
-// types/index.ts - Ažurirani tipovi
+// types/index.ts
 export interface Vehicle {
   id: number;
   brand: string;
@@ -7,11 +7,10 @@ export interface Vehicle {
   registration_number: string;
   daily_rate: number;
   status: 'available' | 'rented' | 'maintenance';
-  fuel_type?: 'gasoline' | 'diesel' | 'hybrid' | 'electric';
-  transmission?: 'manual' | 'automatic';
-  seat_count?: number;
+  fuel_type: 'gasoline' | 'diesel' | 'hybrid' | 'electric';
+  transmission: 'manual' | 'automatic';
+  seat_count: number;
   image_url?: string;
-  user_id?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -24,7 +23,6 @@ export interface Client {
   phone?: string;
   address?: string;
   id_number?: string;
-  user_id?: string;
   created_at?: Date;
 }
 
@@ -34,12 +32,8 @@ export interface Rental {
   client_id: number;
   start_date: string;
   end_date: string;
-  start_datetime?: string; // Nova polja za rezervacije
-  end_datetime?: string;
   total_price: number;
-  status: 'active' | 'completed' | 'cancelled' | 'reserved'; // Dodano 'reserved'
-  notes?: string; // Nova polja za napomene
-  user_id?: string;
+  status: 'active' | 'completed' | 'cancelled';
   created_at?: Date;
   updated_at?: Date;
   vehicle?: Vehicle;
@@ -70,30 +64,66 @@ export interface User {
   displayName: string | null;
 }
 
-// Novi tipovi specifični za rezervacije
-export interface Reservation extends Rental {
-  status: 'reserved';
-  start_datetime: string;
-  end_datetime: string;
+export interface ContractTemplate {
+  id?: number;
+  user_id?: string;
+  company_name: string;
+  company_address: string;
+  company_phone?: string;
+  company_email?: string;
+  contract_terms: string;
+  penalty_rate: number;
+  logo_url?: string;
+  // Novi podaci za napredni template
+  jib_number?: string;
+  bank_account?: string;
+  owner_name?: string;
+  contract_style: 'simple' | 'detailed' | 'jandra_style';
+  include_km_fields: boolean;
+  include_driver_license: boolean;
+  include_id_details: boolean;
+  fuel_policy?: string;
+  additional_notes?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface ReservationFormData {
-  vehicle_id: string;
-  client_id: string;
-  start_date: string;
-  end_date: string;
-  start_time: string;
-  end_time: string;
-  notes?: string;
+export interface ClientDetails {
+  id?: number;
+  client_id: number;
+  user_id: string;
+  birth_date?: string;
+  birth_place?: string;
+  id_number?: string;
+  id_issued_by?: string;
+  id_issue_date?: string;
+  id_expiry_date?: string;
+  driver_license_number?: string;
+  driver_license_issued_by?: string;
+  driver_license_issue_date?: string;
+  driver_license_expiry_date?: string;
+  additional_driver_name?: string;
+  additional_driver_license?: string;
+  additional_driver_issued_by?: string;
+  additional_driver_issue_date?: string;
+  additional_driver_expiry_date?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-// Dashboard tipovi
-export interface DashboardStats {
-  totalVehicles: number;
-  totalClients: number;
-  activeRentals: number;
-  reservedRentals: number;
-  monthlyRevenue: number;
-  availableVehicles: number;
-  upcomingReservations: number;
+export interface RentalDetails {
+  id?: number;
+  rental_id: number;
+  user_id: string;
+  start_kilometers?: number;
+  end_kilometers?: number;
+  fuel_level_start?: string;
+  fuel_level_end?: string;
+  pickup_time?: string;
+  return_time?: string;
+  pickup_location?: string;
+  return_location?: string;
+  additional_notes?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }

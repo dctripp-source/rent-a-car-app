@@ -12,6 +12,15 @@ interface ContractTemplate {
   contract_terms: string;
   penalty_rate: number;
   logo_url?: string;
+  jib_number?: string;
+  bank_account?: string;
+  owner_name?: string;
+  contract_style: 'simple' | 'detailed' | 'jandra_style';
+  include_km_fields: boolean;
+  include_driver_license: boolean;
+  include_id_details: boolean;
+  fuel_policy?: string;
+  additional_notes?: string;
 }
 
 export async function GET(
@@ -87,7 +96,16 @@ export async function GET(
         company_email: dbTemplate.company_email ? String(dbTemplate.company_email) : undefined,
         contract_terms: String(dbTemplate.contract_terms || ''),
         penalty_rate: Number(dbTemplate.penalty_rate || 50.00),
-        logo_url: dbTemplate.logo_url ? String(dbTemplate.logo_url) : undefined
+        logo_url: dbTemplate.logo_url ? String(dbTemplate.logo_url) : undefined,
+        jib_number: dbTemplate.jib_number ? String(dbTemplate.jib_number) : undefined,
+        bank_account: dbTemplate.bank_account ? String(dbTemplate.bank_account) : undefined,
+        owner_name: dbTemplate.owner_name ? String(dbTemplate.owner_name) : undefined,
+        contract_style: (dbTemplate.contract_style as 'simple' | 'detailed' | 'jandra_style') || 'simple',
+        include_km_fields: Boolean(dbTemplate.include_km_fields),
+        include_driver_license: Boolean(dbTemplate.include_driver_license),
+        include_id_details: Boolean(dbTemplate.include_id_details),
+        fuel_policy: dbTemplate.fuel_policy ? String(dbTemplate.fuel_policy) : undefined,
+        additional_notes: dbTemplate.additional_notes ? String(dbTemplate.additional_notes) : undefined
       };
     } else {
       // Use default template if none exists
@@ -106,7 +124,16 @@ Dodatni uslovi:
 - Zabranjeno je prevoz kućnih ljubimaca bez prethodnog odobrenja
 - Maksimalna dozvoljena brzina je ograničena na 130 km/h na autoputu`,
         penalty_rate: 50.00,
-        logo_url: undefined
+        logo_url: undefined,
+        jib_number: undefined,
+        bank_account: undefined,
+        owner_name: undefined,
+        contract_style: 'simple',
+        include_km_fields: false,
+        include_driver_license: false,
+        include_id_details: false,
+        fuel_policy: 'Vozilo se preuzima sa punim rezervoarom goriva i vraća sa punim rezervoarom.',
+        additional_notes: undefined
       };
     }
 
