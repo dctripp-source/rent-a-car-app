@@ -57,441 +57,551 @@ interface RentalDetails {
   return_time?: string;
 }
 
-// Function to add Serbian text with proper encoding
-function addSerbianText(
-  doc: jsPDF, 
-  text: string, 
-  x: number, 
-  y: number, 
-  options?: {
-    fontSize?: number;
-    fontStyle?: 'normal' | 'bold' | 'italic';
-    align?: 'left' | 'center' | 'right';
-    maxWidth?: number;
-  }
-) {
-  const fontSize = options?.fontSize || 10;
-  const fontStyle = options?.fontStyle || 'normal';
-  const align = options?.align || 'left';
-  const maxWidth = options?.maxWidth || 180;
+// Klasa za upravljanje PDF dokumentom
+class PDFManager {
+  private doc: jsPDF;
+  private currentY: number;
+  private pageHeight: number;
+  private pageWidth: number;
+  private leftMargin: number;
+  private rightMargin: number;
+  private bottomMargin: number;
 
-  doc.setFontSize(fontSize);
-  
-  if (fontStyle === 'bold') {
-    doc.setFont(undefined, 'bold');
-  } else if (fontStyle === 'italic') {
-    doc.setFont(undefined, 'italic');
-  } else {
-    doc.setFont(undefined, 'normal');
+  constructor() {
+    this.doc = new jsPDF();
+    this.currentY = 20;
+    this.pageHeight = this.doc.internal.pageSize.getHeight();
+    this.pageWidth = this.doc.internal.pageSize.getWidth();
+    this.leftMargin = 15;
+    this.rightMargin = 15;
+    this.bottomMargin = 20;
   }
 
-  // Convert Serbian characters
-  const serbianText = text
-    .replace(/č/g, 'c').replace(/ć/g, 'c').replace(/đ/g, 'd')
-    .replace(/š/g, 's').replace(/ž/g, 'z')
-    .replace(/Č/g, 'C').replace(/Ć/g, 'C').replace(/Đ/g, 'D')
-    .replace(/Š/g, 'S').replace(/Ž/g, 'Z');
+  checkPageBreak(requiredSpace: number = 20): void {
+    if (this.currentY + requiredSpace > this.pageHeight - this.bottomMargin) {
+      this.doc.addPage();
+      this.currentY = 20;
+    }
+  }
 
-  if (maxWidth && text.length > 50) {
-    const lines = doc.splitTextToSize(serbianText, maxWidth);
-    doc.text(lines, x, y, { align });
-    return y + (lines.length * (fontSize * 0.35));
-  } else {
-    doc.text(serbianText, x, y, { align });
-    return y + (fontSize * 0.35);
+  addText(
+    text: string, 
+    x: number, 
+    y?: number, 
+    options?: {
+      fontSize?: number;
+      fontStyle?: 'normal' | 'bold' | 'italic';
+      align?: 'left' | 'center' | 'right';
+      maxWidth?: number;
+      autoY?: boolean;
+    }
+  ): number {
+    const fontSize = options?.fontSize || 10;
+    const fontStyle = options?.fontStyle || 'normal';
+    const align = options?.align || 'left';
+    const maxWidth = options?.maxWidth || (this.pageWidth - this.leftMargin - this.rightMargin);
+    const useAutoY = options?.autoY !== false;
+    
+    const actualY = y || this.currentY;
+
+    this.doc.setFontSize(fontSize);
+    this.doc.setFont(undefined, fontStyle);
+
+    // Convert Serbian characters
+    const serbianText = text
+      .replace(/č/g, 'c').replace(/ć/g, 'c').replace(/đ/g, 'd')
+      .replace(/š/g, 's').replace(/ž/g, 'z')
+      .replace(/Č/g, 'C').replace(/Ć/g, 'C').replace(/Đ/g, 'D')
+      .replace(/Š/g, 'S').replace(/Ž/g, 'Z');
+
+    if (text.length > 50 || maxWidth < this.pageWidth - 30) {
+      const lines = this.doc.splitTextToSize(serbianText, maxWidth);
+      const totalHeight = lines.length * (fontSize * 0.35);
+      
+      if (useAutoY) {
+        this.checkPageBreak(totalHeight + 5);
+      }
+      
+      this.doc.text(lines, x, y || this.currentY, { align });
+      
+      if (useAutoY) {
+        this.currentY += totalHeight + 3;
+      }
+      
+      return totalHeight;
+    } else {
+      if (useAutoY) {
+        this.checkPageBreak(fontSize * 0.35 + 3);
+      }
+      
+      this.doc.text(serbianText, x, y || this.currentY, { align });
+      
+      if (useAutoY) {
+        this.currentY += fontSize * 0.35 + 3;
+      }
+      
+      return fontSize * 0.35;
+    }
+  }
+
+  addSpace(space: number): void {
+    this.currentY += space;
+  }
+
+  drawLine(x1: number, y1: number, x2: number, y2: number): void {
+    this.doc.line(x1, y1, x2, y2);
+  }
+
+  drawRect(x: number, y: number, width: number, height: number, style?: 'S' | 'F' | 'FD'): void {
+    this.doc.rect(x, y, width, height, style);
+  }
+
+  setTextColor(r: number, g?: number, b?: number): void {
+    if (g !== undefined && b !== undefined) {
+      this.doc.setTextColor(r, g, b);
+    } else {
+      this.doc.setTextColor(r);
+    }
+  }
+
+  addImage(dataUrl: string, x: number, y: number, width: number, height: number): void {
+    this.doc.addImage(dataUrl, 'JPEG', x, y, width, height);
+  }
+
+  getPageWidth(): number {
+    return this.pageWidth;
+  }
+
+  getLeftMargin(): number {
+    return this.leftMargin;
+  }
+
+  getRightMargin(): number {
+    return this.rightMargin;
+  }
+
+  getCurrentY(): number {
+    return this.currentY;
+  }
+
+  setCurrentY(y: number): void {
+    this.currentY = y;
+  }
+
+  output(type: string): ArrayBuffer {
+    return this.doc.output(type as any);
   }
 }
 
-// Function to draw table cell
-function drawTableCell(
-  doc: jsPDF, 
-  text: string, 
-  x: number, 
-  y: number, 
-  width: number, 
-  height: number,
+// Function to create table
+function createTable(
+  pdf: PDFManager,
+  data: string[][],
   options?: {
+    startY?: number;
+    columnWidths?: number[];
+    rowHeight?: number;
     fontSize?: number;
-    fontStyle?: 'normal' | 'bold';
-    fillColor?: string;
-    textColor?: string;
-    border?: boolean;
+    headerStyle?: boolean;
   }
-) {
+): number {
+  const startY = options?.startY || pdf.getCurrentY();
+  const rowHeight = options?.rowHeight || 8;
   const fontSize = options?.fontSize || 9;
-  const fontStyle = options?.fontStyle || 'normal';
-  const border = options?.border !== false;
-  
-  // Draw cell border
-  if (border) {
-    doc.rect(x, y, width, height);
-  }
-  
-  // Fill background if specified
-  if (options?.fillColor) {
-    doc.setFillColor(options.fillColor);
-    doc.rect(x, y, width, height, 'F');
-  }
-  
-  // Set text color
-  if (options?.textColor) {
-    doc.setTextColor(options.textColor);
-  } else {
-    doc.setTextColor(0, 0, 0);
-  }
-  
-  // Add text
-  doc.setFontSize(fontSize);
-  doc.setFont(undefined, fontStyle);
-  
-  const lines = doc.splitTextToSize(text, width - 4);
-  const textHeight = lines.length * (fontSize * 0.35);
-  const textY = y + (height - textHeight) / 2 + (fontSize * 0.35);
-  
-  doc.text(lines, x + 2, textY);
+  const headerStyle = options?.headerStyle || false;
+
+  const pageWidth = pdf.getPageWidth();
+  const leftMargin = pdf.getLeftMargin();
+  const rightMargin = pdf.getRightMargin();
+  const tableWidth = pageWidth - leftMargin - rightMargin;
+
+  // Calculate column widths
+  const columnWidths = options?.columnWidths || 
+    Array(data[0]?.length || 1).fill(tableWidth / (data[0]?.length || 1));
+
+  let currentY = startY;
+
+  data.forEach((row, rowIndex) => {
+    // Check if we need a new page
+    pdf.checkPageBreak(rowHeight + 5);
+    currentY = pdf.getCurrentY();
+
+    let currentX = leftMargin;
+
+    row.forEach((cell, colIndex) => {
+      const cellWidth = columnWidths[colIndex] || tableWidth / row.length;
+      
+      // Draw cell border
+      pdf.drawRect(currentX, currentY, cellWidth, rowHeight);
+      
+      // Add cell text
+      pdf.addText(cell, currentX + 2, currentY + (rowHeight / 2) + 2, {
+        fontSize: fontSize,
+        fontStyle: (rowIndex === 0 && headerStyle) ? 'bold' : 'normal',
+        maxWidth: cellWidth - 4,
+        autoY: false
+      });
+
+      currentX += cellWidth;
+    });
+
+    pdf.setCurrentY(currentY + rowHeight);
+  });
+
+  return pdf.getCurrentY();
 }
 
 // Generate Jandra Cars style contract
 function generateJandraStyleContract(
-  doc: jsPDF,
+  pdf: PDFManager,
   data: ContractData,
   template: ContractTemplate,
   clientDetails?: ClientDetails,
   rentalDetails?: RentalDetails
 ) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const leftMargin = 15;
-  const rightMargin = 15;
-  const contentWidth = pageWidth - leftMargin - rightMargin;
-  
-  let currentY = 20;
-  const rowHeight = 8;
-  
-  // Header section with company info
-  const headerHeight = 25;
-  
-  // Company name and address (left side)
-  drawTableCell(doc, template.company_name, leftMargin, currentY, contentWidth * 0.4, headerHeight * 0.4, {
-    fontSize: 11,
-    fontStyle: 'bold'
-  });
-  
-  currentY += headerHeight * 0.4;
-  drawTableCell(doc, template.company_address, leftMargin, currentY, contentWidth * 0.4, headerHeight * 0.3, {
-    fontSize: 9
-  });
-  
-  currentY += headerHeight * 0.3;
-  if (template.owner_name) {
-    drawTableCell(doc, `Vl ${template.owner_name}`, leftMargin, currentY, contentWidth * 0.4, headerHeight * 0.3, {
-      fontSize: 9
-    });
-  }
-  
-  // Contact info (right side)
-  currentY = 20;
-  if (template.company_email) {
-    drawTableCell(doc, 'Email:', pageWidth * 0.55, currentY, contentWidth * 0.15, rowHeight, {
-      fontSize: 9,
-      fontStyle: 'bold'
-    });
-    drawTableCell(doc, template.company_email, pageWidth * 0.7, currentY, contentWidth * 0.3, rowHeight, {
-      fontSize: 9
-    });
-    currentY += rowHeight;
-  }
-  
-  if (template.company_phone) {
-    drawTableCell(doc, 'Tel:', pageWidth * 0.55, currentY, contentWidth * 0.15, rowHeight, {
-      fontSize: 9,
-      fontStyle: 'bold'
-    });
-    drawTableCell(doc, template.company_phone, pageWidth * 0.7, currentY, contentWidth * 0.3, rowHeight, {
-      fontSize: 9
-    });
-    currentY += rowHeight;
-  }
-  
-  currentY = Math.max(currentY, 45);
-  
-  // JIB and Bank account row
-  if (template.jib_number || template.bank_account) {
-    currentY += 5;
-    
-    if (template.jib_number) {
-      drawTableCell(doc, `JIB: ${template.jib_number}`, leftMargin, currentY, contentWidth * 0.5, rowHeight, {
-        fontSize: 9
-      });
-    }
-    
-    if (template.bank_account) {
-      drawTableCell(doc, 'Ziro racun:', pageWidth * 0.55, currentY, contentWidth * 0.2, rowHeight, {
-        fontSize: 9,
-        fontStyle: 'bold'
-      });
-      drawTableCell(doc, template.bank_account, pageWidth * 0.75, currentY, contentWidth * 0.25, rowHeight, {
-        fontSize: 9
-      });
-    }
-    
-    currentY += rowHeight + 5;
-  }
-  
-  // Contract title
-  currentY += 10;
-  drawTableCell(doc, 'U G O V O R', pageWidth / 2 - 30, currentY, 60, 10, {
+  const pageWidth = pdf.getPageWidth();
+  const leftMargin = pdf.getLeftMargin();
+
+  // Header with company info
+  pdf.addText(template.company_name, leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  
-  currentY += 12;
-  drawTableCell(doc, `O NAJMU BR.: ${String(data.id).padStart(2, '0')} / ${new Date().getFullYear().toString().slice(-2)}`, pageWidth / 2 - 40, currentY, 80, 8, {
-    fontSize: 11,
-    fontStyle: 'bold'
+
+  pdf.addText(template.company_address, leftMargin, undefined, {
+    fontSize: 10
   });
-  
-  currentY += 10;
-  drawTableCell(doc, '(RENTAL AGREEMENT NO.)', pageWidth / 2 - 35, currentY, 70, 6, {
-    fontSize: 8
+
+  if (template.owner_name) {
+    pdf.addText(`Vl ${template.owner_name}`, leftMargin, undefined, {
+      fontSize: 10
+    });
+  }
+
+  // Contact info (right side)
+  let contactY = 20;
+  if (template.company_email) {
+    pdf.addText(`Email: ${template.company_email}`, pageWidth * 0.6, contactY, {
+      fontSize: 9,
+      autoY: false
+    });
+    contactY += 6;
+  }
+
+  if (template.company_phone) {
+    pdf.addText(`Tel: ${template.company_phone}`, pageWidth * 0.6, contactY, {
+      fontSize: 9,
+      autoY: false
+    });
+  }
+
+  pdf.addSpace(10);
+
+  // JIB and Bank account
+  if (template.jib_number) {
+    pdf.addText(`JIB: ${template.jib_number}`, leftMargin, undefined, {
+      fontSize: 9
+    });
+  }
+
+  if (template.bank_account) {
+    pdf.addText(`Ziro racun: ${template.bank_account}`, leftMargin, undefined, {
+      fontSize: 9
+    });
+  }
+
+  pdf.addSpace(15);
+
+  // Contract title
+  pdf.addText('U G O V O R', pageWidth / 2, undefined, {
+    fontSize: 16,
+    fontStyle: 'bold',
+    align: 'center'
   });
-  
-  currentY += 15;
-  
-  // Client information table
-  const tableData = [
-    ['Ime korisnika / Renters name:', '', data.client_name, ''],
-    ['Adresa korisnika (zemlja) / Renters address (country):', '', data.client_address || '', ''],
-    ['Telefon / mob:', '', data.client_phone || '', ''],
+
+  pdf.addText(`O NAJMU BR.: ${String(data.id).padStart(2, '0')} / ${new Date().getFullYear().toString().slice(-2)}`, pageWidth / 2, undefined, {
+    fontSize: 12,
+    fontStyle: 'bold',
+    align: 'center'
+  });
+
+  pdf.addText('(RENTAL AGREEMENT NO.)', pageWidth / 2, undefined, {
+    fontSize: 8,
+    align: 'center'
+  });
+
+  pdf.addSpace(10);
+
+  // Create client and vehicle info table
+  const tableData: string[][] = [
+    ['Ime korisnika / Renters name:', data.client_name],
+    ['Adresa korisnika / Renters address:', data.client_address || ''],
+    ['Telefon / mob:', data.client_phone || ''],
   ];
-  
+
   // Add detailed client info if enabled
   if (template.include_id_details && clientDetails) {
     tableData.push(
-      ['Datum i mjesto rodjenja/ Birth date and place:', '', `${clientDetails.birth_date || ''}, ${clientDetails.birth_place || ''}`, ''],
-      ['Licna karta br / Passport no:', data.client_id_number || '', 'Izdat od / issued by:', clientDetails.id_issued_by || ''],
-      ['Datum izdavanja / Date of issue:', clientDetails.id_issue_date || '', 'Vrijedi do / Expires:', clientDetails.id_expiry_date || '']
+      ['Datum i mjesto rodjenja / Birth date and place:', `${clientDetails.birth_date || ''}, ${clientDetails.birth_place || ''}`],
+      ['Licna karta br / ID no:', data.client_id_number || ''],
+      ['Izdat od / Issued by:', clientDetails.id_issued_by || ''],
+      ['Datum izdavanja / Issue date:', clientDetails.id_issue_date || ''],
+      ['Vrijedi do / Expires:', clientDetails.id_expiry_date || '']
     );
   }
-  
+
   // Add driver license info if enabled
   if (template.include_driver_license && clientDetails) {
     tableData.push(
-      ['Vozacka dozvola br / Driver licence no', clientDetails.driver_license_number || '', 'Izdat od / issued by:', clientDetails.driver_license_issued_by || ''],
-      ['Datum izdavanja / Date of issue:', clientDetails.driver_license_issue_date || '', 'Vrijedi do / Expires:', clientDetails.driver_license_expiry_date || '']
+      ['Vozacka dozvola br / Driver licence no:', clientDetails.driver_license_number || ''],
+      ['Izdat od / Issued by:', clientDetails.driver_license_issued_by || ''],
+      ['Datum izdavanja / Issue date:', clientDetails.driver_license_issue_date || ''],
+      ['Vrijedi do / Expires:', clientDetails.driver_license_expiry_date || '']
     );
   }
-  
+
   // Vehicle information
   const startDate = new Date(data.start_date);
   const endDate = new Date(data.end_date);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  
+
   tableData.push(
-    ['Vrsta vozila / Vehicle type', '', 'Putnicko motorno vozilo / Personal car (PKW)', ''],
-    ['Marka i model vozila / Make and model of vehicle', '', `${data.brand} ${data.model}`, ''],
-    ['Registarske table vozila / Vehicle number plate:', '', data.registration_number, ''],
-    ['Vrijeme koristenja vozila / Rental time (days/months)', '', `${days} dana / days`, ''],
-    ['Pocetak koristenja / Start date and time:', '', `${format(startDate, 'dd.MM.yyyy')} / ${rentalDetails?.pickup_time || '13:00h'}`, ''],
-    ['Zavrsetak koristenja / The end date and time:', '', `${format(endDate, 'dd.MM.yyyy')} / ${rentalDetails?.return_time || '13:00h'}`, '']
+    ['Vrsta vozila / Vehicle type:', 'Putnicko motorno vozilo / Personal car'],
+    ['Marka i model / Make and model:', `${data.brand} ${data.model}`],
+    ['Registarske table / Reg. number:', data.registration_number],
+    ['Vrijeme koristenja / Rental time:', `${days} dana / days`],
+    ['Pocetak / Start date:', `${format(startDate, 'dd.MM.yyyy')} / ${rentalDetails?.pickup_time || '13:00h'}`],
+    ['Zavrsetak / End date:', `${format(endDate, 'dd.MM.yyyy')} / ${rentalDetails?.return_time || '13:00h'}`]
   );
-  
+
   // Add kilometers if enabled
   if (template.include_km_fields) {
-    tableData.push(
-      ['Pocetna kilometraza na vozilu / Start kilometers on vehicle', '', `${rentalDetails?.start_kilometers || '______'} km`, '']
-    );
+    tableData.push(['Pocetna kilometraza / Start km:', `${rentalDetails?.start_kilometers || '______'} km`]);
   }
-  
-  tableData.push(
-    ['Cijena najma po danu / Rental price per day:', '', `${data.daily_rate.toFixed(2)} KM (BAM)`, '']
-  );
-  
-  // Draw table
-  const colWidths = [contentWidth * 0.35, contentWidth * 0.15, contentWidth * 0.35, contentWidth * 0.15];
-  
-  tableData.forEach(row => {
-    let x = leftMargin;
-    row.forEach((cell, index) => {
-      drawTableCell(doc, cell, x, currentY, colWidths[index], rowHeight, {
-        fontSize: 8,
-        fontStyle: index === 0 ? 'bold' : 'normal'
-      });
-      x += colWidths[index];
-    });
-    currentY += rowHeight;
+
+  tableData.push(['Cijena po danu / Price per day:', `${data.daily_rate.toFixed(2)} KM`]);
+
+  // Create table
+  createTable(pdf, tableData, {
+    columnWidths: [(pageWidth - 30) * 0.6, (pageWidth - 30) * 0.4],
+    rowHeight: 10,
+    fontSize: 9
   });
-  
-  // Fuel policy note
+
+  pdf.addSpace(10);
+
+  // Fuel policy
   if (template.fuel_policy) {
-    currentY += 5;
-    // Use addSerbianText for multi-line text instead of drawTableCell
-    addSerbianText(doc, template.fuel_policy, leftMargin, currentY, {
-      fontSize: 8,
-      maxWidth: contentWidth
+    pdf.addText(template.fuel_policy, leftMargin, undefined, {
+      fontSize: 9,
+      maxWidth: pageWidth - 30
     });
-    currentY += 25;
+    pdf.addSpace(10);
   }
-  
-  // Signature section
-  currentY += 10;
-  drawTableCell(doc, 'Potpis korisnika / Renters signature:', leftMargin, currentY, contentWidth * 0.5, rowHeight, {
-    fontSize: 9
-  });
-  drawTableCell(doc, `Banja Luka, ${format(new Date(), 'dd.MM.yyyy')} godine`, contentWidth * 0.6, currentY, contentWidth * 0.4, rowHeight, {
-    fontSize: 9
-  });
-  
-  currentY += 15;
-  
+
   // Contract terms
   if (template.contract_terms) {
+    pdf.addText('USLOVI UGOVORA:', leftMargin, undefined, {
+      fontSize: 11,
+      fontStyle: 'bold'
+    });
+
     const processedTerms = template.contract_terms.replace(
       /\{penalty_rate\}/g, 
       template.penalty_rate.toString()
     );
+
+    // Split terms into paragraphs
+    const paragraphs = processedTerms.split('\n').filter(p => p.trim().length > 0);
     
-    // Use addSerbianText for multi-line text
-    addSerbianText(doc, processedTerms, leftMargin, currentY, {
-      fontSize: 8,
-      maxWidth: contentWidth
+    paragraphs.forEach(paragraph => {
+      pdf.addText(paragraph.trim(), leftMargin, undefined, {
+        fontSize: 9,
+        maxWidth: pageWidth - 30
+      });
+      pdf.addSpace(3);
     });
-    currentY += 35;
   }
-  
+
+  pdf.addSpace(15);
+
   // Total price highlight
-  currentY += 10;
-  doc.setTextColor(0, 100, 200);
-  drawTableCell(doc, `UKUPNA CIJENA: ${data.total_price.toFixed(2)} KM`, pageWidth / 2 - 40, currentY, 80, 10, {
-    fontSize: 12,
-    fontStyle: 'bold'
+  pdf.setTextColor(0, 100, 200);
+  pdf.addText(`UKUPNA CIJENA: ${data.total_price.toFixed(2)} KM`, pageWidth / 2, undefined, {
+    fontSize: 14,
+    fontStyle: 'bold',
+    align: 'center'
   });
-  doc.setTextColor(0, 0, 0);
+  pdf.setTextColor(0, 0, 0);
+
+  pdf.addSpace(20);
+
+  // Signature section
+  const signatureY = pdf.getCurrentY();
+  
+  // Make sure we have enough space for signatures
+  pdf.checkPageBreak(40);
+  
+  const finalSignatureY = pdf.getCurrentY();
+  
+  // Draw signature lines
+  pdf.drawLine(leftMargin + 20, finalSignatureY + 30, leftMargin + 100, finalSignatureY + 30);
+  pdf.drawLine(pageWidth - 120, finalSignatureY + 30, pageWidth - 40, finalSignatureY + 30);
+
+  // Add signature labels
+  pdf.addText('Iznajmljivac', leftMargin + 45, finalSignatureY + 40, {
+    fontSize: 10,
+    align: 'center',
+    autoY: false
+  });
+
+  pdf.addText(template.company_name, leftMargin + 45, finalSignatureY + 48, {
+    fontSize: 8,
+    align: 'center',
+    autoY: false
+  });
+
+  pdf.addText('Klijent', pageWidth - 80, finalSignatureY + 40, {
+    fontSize: 10,
+    align: 'center',
+    autoY: false
+  });
+
+  pdf.addText(data.client_name, pageWidth - 80, finalSignatureY + 48, {
+    fontSize: 8,
+    align: 'center',
+    autoY: false
+  });
+
+  // Add location and date
+  pdf.addText(`Banja Luka, ${format(new Date(), 'dd.MM.yyyy')} godine`, pageWidth / 2, finalSignatureY + 60, {
+    fontSize: 9,
+    align: 'center',
+    autoY: false
+  });
 }
 
 // Generate simple contract
 function generateSimpleContract(
-  doc: jsPDF,
+  pdf: PDFManager,
   data: ContractData,
   template: ContractTemplate
 ) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const leftMargin = 20;
-  let currentY = 20;
+  const pageWidth = pdf.getPageWidth();
+  const leftMargin = pdf.getLeftMargin();
 
   // Header
-  currentY = addSerbianText(doc, 'UGOVOR O IZNAJMLJIVANJU VOZILA', pageWidth / 2, currentY, {
+  pdf.addText('UGOVOR O IZNAJMLJIVANJU VOZILA', pageWidth / 2, undefined, {
     fontSize: 18,
     fontStyle: 'bold',
     align: 'center'
   });
-  currentY += 10;
 
-  currentY = addSerbianText(doc, `Broj ugovora: ${data.id}/${new Date().getFullYear()}`, pageWidth / 2, currentY, {
+  pdf.addText(`Broj ugovora: ${data.id}/${new Date().getFullYear()}`, pageWidth / 2, undefined, {
     fontSize: 12,
     align: 'center'
   });
-  currentY += 15;
+
+  pdf.addSpace(15);
 
   // Company info
-  currentY = addSerbianText(doc, '1. IZNAJMLJIVAC', leftMargin, currentY, {
+  pdf.addText('1. IZNAJMLJIVAC', leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  currentY += 8;
   
-  currentY = addSerbianText(doc, template.company_name, leftMargin, currentY);
-  currentY += 5;
-  currentY = addSerbianText(doc, template.company_address, leftMargin, currentY);
-  currentY += 15;
+  pdf.addText(template.company_name, leftMargin, undefined, { fontSize: 11 });
+  pdf.addText(template.company_address, leftMargin, undefined, { fontSize: 10 });
+
+  pdf.addSpace(10);
 
   // Client info
-  currentY = addSerbianText(doc, '2. KLIJENT', leftMargin, currentY, {
+  pdf.addText('2. KLIJENT', leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  currentY += 8;
   
-  currentY = addSerbianText(doc, data.client_name, leftMargin, currentY);
-  currentY += 5;
+  pdf.addText(data.client_name, leftMargin, undefined, { fontSize: 11 });
   if (data.client_address) {
-    currentY = addSerbianText(doc, data.client_address, leftMargin, currentY);
-    currentY += 5;
+    pdf.addText(data.client_address, leftMargin, undefined, { fontSize: 10 });
   }
-  currentY = addSerbianText(doc, data.client_email, leftMargin, currentY);
-  currentY += 15;
+  pdf.addText(data.client_email, leftMargin, undefined, { fontSize: 10 });
+
+  pdf.addSpace(10);
 
   // Vehicle info
-  currentY = addSerbianText(doc, '3. VOZILO', leftMargin, currentY, {
+  pdf.addText('3. VOZILO', leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  currentY += 8;
   
-  currentY = addSerbianText(doc, `${data.brand} ${data.model} (${data.year})`, leftMargin, currentY);
-  currentY += 5;
-  currentY = addSerbianText(doc, `Registarski broj: ${data.registration_number}`, leftMargin, currentY);
-  currentY += 15;
+  pdf.addText(`${data.brand} ${data.model} (${data.year})`, leftMargin, undefined, { fontSize: 11 });
+  pdf.addText(`Registarski broj: ${data.registration_number}`, leftMargin, undefined, { fontSize: 10 });
 
-  // Rental period
+  pdf.addSpace(10);
+
+  // Rental period and price
   const startDate = new Date(data.start_date);
   const endDate = new Date(data.end_date);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   
-  currentY = addSerbianText(doc, '4. PERIOD I CIJENA', leftMargin, currentY, {
+  pdf.addText('4. PERIOD I CIJENA', leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  currentY += 8;
   
-  currentY = addSerbianText(doc, `Od: ${format(startDate, 'dd.MM.yyyy')} do: ${format(endDate, 'dd.MM.yyyy')}`, leftMargin, currentY);
-  currentY += 5;
-  currentY = addSerbianText(doc, `Broj dana: ${days}`, leftMargin, currentY);
-  currentY += 5;
-  currentY = addSerbianText(doc, `Cijena po danu: ${data.daily_rate.toFixed(2)} KM`, leftMargin, currentY);
-  currentY += 5;
+  pdf.addText(`Od: ${format(startDate, 'dd.MM.yyyy')} do: ${format(endDate, 'dd.MM.yyyy')}`, leftMargin, undefined, { fontSize: 10 });
+  pdf.addText(`Broj dana: ${days}`, leftMargin, undefined, { fontSize: 10 });
+  pdf.addText(`Cijena po danu: ${data.daily_rate.toFixed(2)} KM`, leftMargin, undefined, { fontSize: 10 });
   
   // Highlight total price
-  doc.setTextColor(0, 100, 200);
-  currentY = addSerbianText(doc, `UKUPNA CIJENA: ${data.total_price.toFixed(2)} KM`, leftMargin, currentY, {
+  pdf.setTextColor(0, 100, 200);
+  pdf.addText(`UKUPNA CIJENA: ${data.total_price.toFixed(2)} KM`, leftMargin, undefined, {
     fontSize: 14,
     fontStyle: 'bold'
   });
-  doc.setTextColor(0, 0, 0);
-  currentY += 20;
+  pdf.setTextColor(0, 0, 0);
+
+  pdf.addSpace(15);
 
   // Terms
   if (template.contract_terms) {
-    currentY = addSerbianText(doc, '5. USLOVI', leftMargin, currentY, {
+    pdf.addText('5. USLOVI', leftMargin, undefined, {
       fontSize: 14,
       fontStyle: 'bold'
     });
-    currentY += 8;
     
     const processedTerms = template.contract_terms.replace(
       /\{penalty_rate\}/g, 
       template.penalty_rate.toString()
     );
     
-    currentY = addSerbianText(doc, processedTerms, leftMargin, currentY, {
+    pdf.addText(processedTerms, leftMargin, undefined, {
       fontSize: 10,
-      maxWidth: pageWidth - 40
+      maxWidth: pageWidth - 30
     });
-    currentY += 20;
   }
 
+  pdf.addSpace(30);
+
   // Signatures
-  const signatureY = currentY + 30;
-  doc.line(leftMargin + 20, signatureY, leftMargin + 80, signatureY);
-  doc.line(pageWidth - 100, signatureY, pageWidth - 40, signatureY);
+  const signatureY = pdf.getCurrentY();
+  pdf.checkPageBreak(50);
+  const finalSignatureY = pdf.getCurrentY();
+
+  pdf.drawLine(leftMargin + 20, finalSignatureY + 20, leftMargin + 100, finalSignatureY + 20);
+  pdf.drawLine(pageWidth - 120, finalSignatureY + 20, pageWidth - 40, finalSignatureY + 20);
   
-  addSerbianText(doc, 'Iznajmljivac', leftMargin + 40, signatureY + 10, {
+  pdf.addText('Iznajmljivac', leftMargin + 50, finalSignatureY + 30, {
     fontSize: 10,
-    align: 'center'
+    align: 'center',
+    autoY: false
   });
   
-  addSerbianText(doc, 'Klijent', pageWidth - 80, signatureY + 10, {
+  pdf.addText('Klijent', pageWidth - 80, finalSignatureY + 30, {
     fontSize: 10,
-    align: 'center'
+    align: 'center',
+    autoY: false
   });
 }
 
@@ -501,7 +611,7 @@ export async function generateContract(
   clientDetails?: ClientDetails,
   rentalDetails?: RentalDetails
 ): Promise<Buffer> {
-  const doc = new jsPDF();
+  const pdf = new PDFManager();
   
   try {
     // Add logo if available
@@ -515,7 +625,7 @@ export async function generateContract(
           reader.onload = function() {
             try {
               const dataUrl = reader.result as string;
-              doc.addImage(dataUrl, 'JPEG', doc.internal.pageSize.getWidth() - 60, 10, 40, 40);
+              pdf.addImage(dataUrl, pdf.getPageWidth() - 60, 10, 40, 40);
             } catch (error) {
               console.error('Error adding image:', error);
             }
@@ -531,13 +641,13 @@ export async function generateContract(
     
     // Generate contract based on style
     if (template.contract_style === 'jandra_style') {
-      generateJandraStyleContract(doc, data, template, clientDetails, rentalDetails);
+      generateJandraStyleContract(pdf, data, template, clientDetails, rentalDetails);
     } else {
-      generateSimpleContract(doc, data, template);
+      generateSimpleContract(pdf, data, template);
     }
     
     // Convert to buffer
-    const pdfOutput = doc.output('arraybuffer');
+    const pdfOutput = pdf.output('arraybuffer');
     return Buffer.from(pdfOutput);
 
   } catch (error) {
