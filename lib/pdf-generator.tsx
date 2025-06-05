@@ -3,99 +3,125 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// UKLONITI SVE FONT REGISTRACIJE - one uzrokuju probleme!
-
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 11,
-    fontFamily: 'Helvetica', // Koristiti SAMO osnovne fontove
-    lineHeight: 1.4,
+    fontFamily: 'Helvetica',
+    lineHeight: 1.3,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 30,
+    marginBottom: 25,
     borderBottomWidth: 2,
     borderBottomColor: '#000',
-    paddingBottom: 20,
+    paddingBottom: 15,
   },
   companyInfo: {
     flex: 1,
+    maxWidth: '60%',
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   companyDetails: {
-    fontSize: 10,
-    lineHeight: 1.3,
+    fontSize: 9,
+    lineHeight: 1.2,
   },
   rightHeader: {
     textAlign: 'right',
-    fontSize: 10,
+    fontSize: 9,
+    maxWidth: '35%',
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   contractNumber: {
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 11,
     marginBottom: 20,
     fontWeight: 'bold',
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 6,
+    backgroundColor: '#f0f0f0',
+    padding: 4,
   },
+  // Poboljšani grid layout
   infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
   },
-  infoItem: {
-    width: '50%',
-    marginBottom: 5,
+  infoRow: {
     flexDirection: 'row',
+    marginBottom: 3,
+    alignItems: 'flex-start',
   },
-  infoItemFull: {
+  infoRowFull: {
+    flexDirection: 'row',
+    marginBottom: 3,
     width: '100%',
-    marginBottom: 5,
-    flexDirection: 'row',
   },
-  label: {
-    width: 120,
+  // Bolje sizing za labele i vrednosti
+  labelLeft: {
+    width: 90,
     fontWeight: 'bold',
-    fontSize: 10,
+    fontSize: 9,
+    marginRight: 5,
   },
-  value: {
+  valueLeft: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 9,
+    marginRight: 15,
+  },
+  labelRight: {
+    width: 70,
+    fontWeight: 'bold',
+    fontSize: 9,
+    marginRight: 5,
+  },
+  valueRight: {
+    flex: 1,
+    fontSize: 9,
+  },
+  // Za punu širinu
+  labelFull: {
+    width: 90,
+    fontWeight: 'bold',
+    fontSize: 9,
+    marginRight: 5,
+  },
+  valueFull: {
+    flex: 1,
+    fontSize: 9,
   },
   priceSection: {
-    marginTop: 20,
-    padding: 15,
+    marginTop: 15,
+    padding: 12,
     backgroundColor: '#f8f9fa',
-    borderRadius: 5,
+    borderRadius: 3,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   priceLabel: {
-    fontSize: 11,
+    fontSize: 10,
   },
   priceValue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   totalPrice: {
@@ -103,57 +129,67 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: '#000',
-    paddingTop: 8,
-    marginTop: 8,
+    paddingTop: 6,
+    marginTop: 6,
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   totalValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   terms: {
-    marginTop: 25,
-    fontSize: 9,
+    marginTop: 20,
+    fontSize: 8,
     textAlign: 'justify',
-    lineHeight: 1.3,
+    lineHeight: 1.2,
   },
   termsTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   signatures: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 40,
+    marginTop: 35,
   },
   signatureBox: {
-    width: '40%',
+    width: '45%',
     textAlign: 'center',
   },
   signatureLine: {
     borderTopWidth: 1,
     borderTopColor: '#000',
-    marginTop: 40,
-    marginBottom: 5,
+    marginTop: 35,
+    marginBottom: 4,
   },
   signatureLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   footer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 25,
     left: 30,
     right: 30,
     textAlign: 'center',
-    fontSize: 8,
+    fontSize: 7,
     color: '#666',
   },
 });
+
+interface CompanySettings {
+  company_name: string;
+  contact_person: string;
+  address: string;
+  phone: string;
+  email: string;
+  jib: string;
+  bank_account: string;
+}
 
 interface ContractData {
   id: number;
@@ -170,6 +206,8 @@ interface ContractData {
   client_phone?: string;
   client_address?: string;
   client_id_number?: string;
+  // Dodani podaci o firmi
+  company?: CompanySettings;
 }
 
 // Funkcija za čišćenje srpskih karaktera
@@ -193,23 +231,34 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const endDate = new Date(data.end_date);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
+  // Default company data ako nije prosleđeno
+  const company = data.company || {
+    company_name: 'NOVERA RENT d.o.o.',
+    contact_person: 'Desanka Jandric',
+    address: 'Rade Kondica 6c, Prijedor',
+    phone: '+387 66 11 77 86',
+    email: 'novera.rent@gmail.com',
+    jib: '4512970750008',
+    bank_account: '562-099-8180-8643-85'
+  };
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header sa kompanijskim podacima i JIB/ziro racun */}
+        {/* Header sa dinamičkim podacima o firmi */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>NOVERA RENT d.o.o.</Text>
+            <Text style={styles.companyName}>{cleanText(company.company_name)}</Text>
             <Text style={styles.companyDetails}>
-              Desanka Jandric{'\n'}
-              Rade Kondica 6c, Prijedor{'\n'}
-              Tel: +387 66 11 77 86{'\n'}
-              Email: novera.rent@gmail.com
+              {cleanText(company.contact_person)}{'\n'}
+              {cleanText(company.address)}{'\n'}
+              Tel: {company.phone}{'\n'}
+              Email: {company.email}
             </Text>
           </View>
           <View style={styles.rightHeader}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>JIB: 4512970750008</Text>
-            <Text style={{ fontWeight: 'bold' }}>Ziro racun: 562-099-8180-8643-85</Text>
+            <Text style={{ fontWeight: 'bold', marginBottom: 3 }}>JIB: {company.jib}</Text>
+            <Text style={{ fontWeight: 'bold' }}>Ziro racun: {company.bank_account}</Text>
           </View>
         </View>
 
@@ -217,67 +266,62 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
         <Text style={styles.contractNumber}>Broj: {String(data.id).padStart(3, '0')}/{new Date().getFullYear()}</Text>
 
-        {/* Podaci o klijentu */}
+        {/* Podaci o klijentu - poboljšan layout */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O KORISNIKU:</Text>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Ime i prezime:</Text>
-              <Text style={styles.value}>{cleanText(data.client_name)}</Text>
+            {/* Red 1: Ime i telefon */}
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Ime i prezime:</Text>
+              <Text style={styles.valueLeft}>{cleanText(data.client_name)}</Text>
+              <Text style={styles.labelRight}>Telefon:</Text>
+              <Text style={styles.valueRight}>{data.client_phone || 'N/A'}</Text>
             </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Telefon:</Text>
-              <Text style={styles.value}>{data.client_phone || 'N/A'}</Text>
+            
+            {/* Red 2: Email i broj LK */}
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Email:</Text>
+              <Text style={styles.valueLeft}>{data.client_email}</Text>
+              <Text style={styles.labelRight}>Br. licne karte:</Text>
+              <Text style={styles.valueRight}>{data.client_id_number || 'N/A'}</Text>
             </View>
-            <View style={styles.infoItemFull}>
-              <Text style={styles.label}>Adresa:</Text>
-              <Text style={styles.value}>{cleanText(data.client_address || 'N/A')}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Email:</Text>
-              <Text style={styles.value}>{data.client_email}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Broj licne karte:</Text>
-              <Text style={styles.value}>{data.client_id_number || 'N/A'}</Text>
+            
+            {/* Red 3: Adresa - puna širina */}
+            <View style={styles.infoRowFull}>
+              <Text style={styles.labelFull}>Adresa:</Text>
+              <Text style={styles.valueFull}>{cleanText(data.client_address || 'N/A')}</Text>
             </View>
           </View>
         </View>
 
-        {/* Podaci o vozilu */}
+        {/* Podaci o vozilu - poboljšan layout */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O VOZILU:</Text>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Vozilo:</Text>
-              <Text style={styles.value}>{cleanText(data.brand)} {cleanText(data.model)} ({data.year})</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Registarske oznake:</Text>
-              <Text style={styles.value}>{data.registration_number}</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Vozilo:</Text>
+              <Text style={styles.valueLeft}>{cleanText(data.brand)} {cleanText(data.model)} ({data.year})</Text>
+              <Text style={styles.labelRight}>Registracija:</Text>
+              <Text style={styles.valueRight}>{data.registration_number}</Text>
             </View>
           </View>
         </View>
 
-        {/* Period iznajmljivanja */}
+        {/* Period iznajmljivanja - poboljšan layout */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PERIOD IZNAJMLJIVANJA:</Text>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Datum pocetka:</Text>
-              <Text style={styles.value}>{format(startDate, 'dd.MM.yyyy')}</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Datum pocetka:</Text>
+              <Text style={styles.valueLeft}>{format(startDate, 'dd.MM.yyyy')}</Text>
+              <Text style={styles.labelRight}>Datum zavrsetka:</Text>
+              <Text style={styles.valueRight}>{format(endDate, 'dd.MM.yyyy')}</Text>
             </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Datum zavrsetka:</Text>
-              <Text style={styles.value}>{format(endDate, 'dd.MM.yyyy')}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Broj dana:</Text>
-              <Text style={styles.value}>{days}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.label}>Cijena po danu:</Text>
-              <Text style={styles.value}>{data.daily_rate.toFixed(2)} KM</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.labelLeft}>Broj dana:</Text>
+              <Text style={styles.valueLeft}>{days}</Text>
+              <Text style={styles.labelRight}>Cijena/dan:</Text>
+              <Text style={styles.valueRight}>{data.daily_rate.toFixed(2)} KM</Text>
             </View>
           </View>
         </View>
@@ -316,12 +360,12 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>IZNAJMLJIVAC</Text>
-            <Text style={{ fontSize: 9, marginTop: 5 }}>NOVERA RENT d.o.o.</Text>
+            <Text style={{ fontSize: 8, marginTop: 3 }}>{cleanText(company.company_name)}</Text>
           </View>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>KORISNIK</Text>
-            <Text style={{ fontSize: 9, marginTop: 5 }}>{cleanText(data.client_name)}</Text>
+            <Text style={{ fontSize: 8, marginTop: 3 }}>{cleanText(data.client_name)}</Text>
           </View>
         </View>
 
@@ -336,16 +380,11 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 
 export async function generateContract(contractData: ContractData): Promise<Buffer> {
   try {
-    console.log('Starting PDF generation...');
+    console.log('Starting PDF generation with data:', contractData);
     const doc = <ContractDocument data={contractData} />;
     
-    console.log('Creating PDF instance...');
     const asPdf = pdf(doc);
-    
-    console.log('Converting to blob...');
     const blob = await asPdf.toBlob();
-    
-    console.log('Converting to buffer...');
     const buffer = await blob.arrayBuffer();
     
     console.log('PDF generated successfully, size:', buffer.byteLength);
