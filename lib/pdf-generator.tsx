@@ -1,27 +1,15 @@
 // lib/pdf-generator.tsx
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// Registruj font koji podržava srpske karaktere
-Font.register({
-  family: 'DejaVu',
-  fonts: [
-    {
-      src: 'https://fonts.gstatic.com/s/dejavu/v1/DejaVuSans.ttf',
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/dejavu/v1/DejaVuSans-Bold.ttf',
-      fontWeight: 'bold',
-    },
-  ],
-});
+// UKLONITI SVE FONT REGISTRACIJE - one uzrokuju probleme!
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 11,
-    fontFamily: 'DejaVu',
+    fontFamily: 'Helvetica', // Koristiti SAMO osnovne fontove
     lineHeight: 1.4,
   },
   header: {
@@ -54,7 +42,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
-    textTransform: 'uppercase',
   },
   contractNumber: {
     textAlign: 'center',
@@ -69,7 +56,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 8,
-    textTransform: 'uppercase',
   },
   infoGrid: {
     flexDirection: 'row',
@@ -186,6 +172,22 @@ interface ContractData {
   client_id_number?: string;
 }
 
+// Funkcija za čišćenje srpskih karaktera
+const cleanText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/ć/g, 'c')
+    .replace(/č/g, 'c')
+    .replace(/š/g, 's')
+    .replace(/đ/g, 'd')
+    .replace(/ž/g, 'z')
+    .replace(/Ć/g, 'C')
+    .replace(/Č/g, 'C')
+    .replace(/Š/g, 'S')
+    .replace(/Đ/g, 'D')
+    .replace(/Ž/g, 'Z');
+};
+
 const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const startDate = new Date(data.start_date);
   const endDate = new Date(data.end_date);
@@ -194,34 +196,34 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header sa kompanijskim podacima i JIB/žiro račun */}
+        {/* Header sa kompanijskim podacima i JIB/ziro racun */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
             <Text style={styles.companyName}>NOVERA RENT d.o.o.</Text>
             <Text style={styles.companyDetails}>
-              Desanka Jandrić{'\n'}
-              Rade Kondića 6c, Prijedor{'\n'}
+              Desanka Jandric{'\n'}
+              Rade Kondica 6c, Prijedor{'\n'}
               Tel: +387 66 11 77 86{'\n'}
               Email: novera.rent@gmail.com
             </Text>
           </View>
           <View style={styles.rightHeader}>
             <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>JIB: 4512970750008</Text>
-            <Text style={{ fontWeight: 'bold' }}>Žiro račun: 562-099-8180-8643-85</Text>
+            <Text style={{ fontWeight: 'bold' }}>Ziro racun: 562-099-8180-8643-85</Text>
           </View>
         </View>
 
         {/* Naslov ugovora */}
-        <Text style={styles.title}>Ugovor o iznajmljivanju vozila</Text>
+        <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
         <Text style={styles.contractNumber}>Broj: {String(data.id).padStart(3, '0')}/{new Date().getFullYear()}</Text>
 
         {/* Podaci o klijentu */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Podaci o korisniku:</Text>
+          <Text style={styles.sectionTitle}>PODACI O KORISNIKU:</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.label}>Ime i prezime:</Text>
-              <Text style={styles.value}>{data.client_name}</Text>
+              <Text style={styles.value}>{cleanText(data.client_name)}</Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.label}>Telefon:</Text>
@@ -229,14 +231,14 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
             </View>
             <View style={styles.infoItemFull}>
               <Text style={styles.label}>Adresa:</Text>
-              <Text style={styles.value}>{data.client_address || 'N/A'}</Text>
+              <Text style={styles.value}>{cleanText(data.client_address || 'N/A')}</Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.label}>Email:</Text>
               <Text style={styles.value}>{data.client_email}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.label}>Broj lične karte:</Text>
+              <Text style={styles.label}>Broj licne karte:</Text>
               <Text style={styles.value}>{data.client_id_number || 'N/A'}</Text>
             </View>
           </View>
@@ -244,11 +246,11 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 
         {/* Podaci o vozilu */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Podaci o vozilu:</Text>
+          <Text style={styles.sectionTitle}>PODACI O VOZILU:</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.label}>Vozilo:</Text>
-              <Text style={styles.value}>{data.brand} {data.model} ({data.year})</Text>
+              <Text style={styles.value}>{cleanText(data.brand)} {cleanText(data.model)} ({data.year})</Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.label}>Registarske oznake:</Text>
@@ -259,14 +261,14 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 
         {/* Period iznajmljivanja */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Period iznajmljivanja:</Text>
+          <Text style={styles.sectionTitle}>PERIOD IZNAJMLJIVANJA:</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.label}>Datum početka:</Text>
+              <Text style={styles.label}>Datum pocetka:</Text>
               <Text style={styles.value}>{format(startDate, 'dd.MM.yyyy')}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.label}>Datum završetka:</Text>
+              <Text style={styles.label}>Datum zavrsetka:</Text>
               <Text style={styles.value}>{format(endDate, 'dd.MM.yyyy')}</Text>
             </View>
             <View style={styles.infoItem}>
@@ -301,11 +303,11 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           <Text style={styles.termsTitle}>USLOVI UGOVORA:</Text>
           <Text>
             1. Korisnik preuzima vozilo u ispravnom stanju sa punim rezervoarom goriva i obavezuje se da ga vrati u istom stanju.{'\n\n'}
-            2. Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom tokom perioda najma.{'\n\n'}
-            3. U slučaju kašnjenja sa vraćanjem vozila, korisnik je dužan platiti penale u iznosu od 50% dnevne cijene za svaki dan kašnjenja.{'\n\n'}
-            4. Zabranjeno je korišćenje vozila pod uticajem alkohola ili narkotičkih sredstava.{'\n\n'}
-            5. Vozilo se ne smije koristiti za prevoz opasnih materija ili u komercijalne svrhe bez pisane saglasnosti iznajmljivača.{'\n\n'}
-            6. Sve štete nastale tokom perioda najma su na teret korisnika.
+            2. Korisnik snosi punu materijalnu, krivicnu i prekrsajnu odgovornost nad vozilom tokom perioda najma.{'\n\n'}
+            3. U slucaju kasnjenja sa vracanjem vozila, korisnik je duzan platiti penale u iznosu od 50% dnevne cijene za svaki dan kasnjenja.{'\n\n'}
+            4. Zabranjeno je koriscenje vozila pod uticajem alkohola ili narkotickih sredstava.{'\n\n'}
+            5. Vozilo se ne smije koristiti za prevoz opasnih materija ili u komercijalne svrhe bez pisane saglasnosti iznajmljivaca.{'\n\n'}
+            6. Sve stete nastale tokom perioda najma su na teret korisnika.
           </Text>
         </View>
 
@@ -313,13 +315,13 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <View style={styles.signatures}>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
-            <Text style={styles.signatureLabel}>IZNAJMLJIVAČ</Text>
+            <Text style={styles.signatureLabel}>IZNAJMLJIVAC</Text>
             <Text style={{ fontSize: 9, marginTop: 5 }}>NOVERA RENT d.o.o.</Text>
           </View>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>KORISNIK</Text>
-            <Text style={{ fontSize: 9, marginTop: 5 }}>{data.client_name}</Text>
+            <Text style={{ fontSize: 9, marginTop: 5 }}>{cleanText(data.client_name)}</Text>
           </View>
         </View>
 
@@ -332,10 +334,24 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   );
 };
 
-export async function generateContract(data: ContractData): Promise<Buffer> {
-  const doc = <ContractDocument data={data} />;
-  const asPdf = pdf(doc);
-  const blob = await asPdf.toBlob();
-  const buffer = await blob.arrayBuffer();
-  return Buffer.from(buffer);
+export async function generateContract(contractData: ContractData): Promise<Buffer> {
+  try {
+    console.log('Starting PDF generation...');
+    const doc = <ContractDocument data={contractData} />;
+    
+    console.log('Creating PDF instance...');
+    const asPdf = pdf(doc);
+    
+    console.log('Converting to blob...');
+    const blob = await asPdf.toBlob();
+    
+    console.log('Converting to buffer...');
+    const buffer = await blob.arrayBuffer();
+    
+    console.log('PDF generated successfully, size:', buffer.byteLength);
+    return Buffer.from(buffer);
+  } catch (error) {
+    console.error('Detailed PDF generation error:', error);
+    throw new Error(`PDF generation failed: ${error}`);
+  }
 }

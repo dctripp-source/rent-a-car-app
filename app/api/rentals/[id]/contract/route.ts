@@ -1,3 +1,4 @@
+// app/api/rentals/[id]/contract/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { generateContract } from '@/lib/pdf-generator';
@@ -8,6 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('Contract generation started for rental ID:', params.id);
+    
     const userId = await verifyToken(request);
     
     if (!userId) {
@@ -26,7 +29,7 @@ export async function GET(
       );
     }
 
-    console.log('Fetching rental details for ID:', rentalId, 'User:', userId);
+    console.log('Fetching rental data for ID:', rentalId, 'User:', userId);
 
     // Get rental details with vehicle and client info
     const rental = await sql`
@@ -52,15 +55,16 @@ export async function GET(
     `;
 
     if (rental.length === 0) {
+      console.log('Rental not found for ID:', rentalId);
       return NextResponse.json(
         { error: 'Rental not found' }, 
         { status: 404 }
       );
     }
 
-    console.log('Rental data fetched:', rental[0]);
+    console.log('Rental data retrieved successfully');
 
-    // Map data for PDF generation - EXACTLY matching the ContractData interface
+    // Prepare contract data - clean and simple
     const contractData = {
       id: rental[0].id,
       start_date: rental[0].start_date,
@@ -78,23 +82,35 @@ export async function GET(
       client_id_number: rental[0].client_id_number || undefined,
     };
 
-    console.log('Contract data prepared:', contractData);
+    console.log('Starting PDF generation...');
 
-    // Generate PDF - EXACTLY ONE PARAMETER
+    // Generate PDF
     const pdfBuffer = await generateContract(contractData);
 
     console.log('PDF generated successfully, buffer size:', pdfBuffer.length);
 
+    // Return PDF with minimal headers to avoid "Request Header Too Large" error
     return new NextResponse(pdfBuffer, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="ugovor-${rentalId}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString(),
+        // Remove any extra headers that could cause size issues
       },
     });
   } catch (error) {
-    console.error('Error generating contract:', error);
+    console.error('Contract generation error:', error);
+    
+    // Return a more detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
-      { error: `Failed to generate contract: ${error}` }, 
+      { 
+        error: 'Failed to generate contract',
+        details: errorMessage,
+        timestamp: new Date().toISOString()
+      }, 
       { status: 500 }
     );
   }
