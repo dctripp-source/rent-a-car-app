@@ -127,3 +127,34 @@ export interface RentalDetails {
   created_at?: Date;
   updated_at?: Date;
 }
+
+// Helper funkcije za rental status
+export const getRentalStatusLabel = (status: string) => {
+  switch (status) {
+    case 'active': return 'Aktivno';
+    case 'completed': return 'Završeno';
+    case 'cancelled': return 'Otkazano';
+    case 'reserved': return 'Rezervisano';
+    default: return status;
+  }
+};
+
+export const getRentalStatusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'bg-green-100 text-green-800';
+    case 'completed': return 'bg-gray-100 text-gray-800';
+    case 'cancelled': return 'bg-red-100 text-red-800';
+    case 'reserved': return 'bg-yellow-100 text-yellow-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+export const getRentalStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'active': return '#10b981'; // Green
+    case 'completed': return '#6b7280'; // Gray
+    case 'cancelled': return '#ef4444'; // Red
+    case 'reserved': return '#f59e0b'; // Yellow/Orange
+    default: return '#6b7280';
+  }
+};

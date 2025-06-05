@@ -25,10 +25,11 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
   newEndDate.setDate(newEndDate.getDate() + extensionDays);
 
   const isReservation = rental.status === 'reserved';
-  const hasDateTime = rental.start_datetime && rental.end_datetime;
+  // Ispravka: koristimo start_date i end_date umjesto start_datetime i end_datetime
+  const hasDateTime = rental.start_date && rental.end_date;
 
-  const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
     return format(date, 'dd.MM.yyyy HH:mm');
   };
 
@@ -272,25 +273,13 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
               </h3>
             </div>
             
-            {hasDateTime ? (
-              <>
-                <p className="text-sm">
-                  Od: <span className="font-medium">{formatDateTime(rental.start_datetime!)}</span>
-                </p>
-                <p className="text-sm">
-                  Do: <span className="font-medium">{formatDateTime(rental.end_datetime!)}</span>
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm">
-                  Od: <span className="font-medium">{format(new Date(rental.start_date), 'dd.MM.yyyy')}</span>
-                </p>
-                <p className="text-sm">
-                  Do: <span className="font-medium">{format(new Date(rental.end_date), 'dd.MM.yyyy')}</span>
-                </p>
-              </>
-            )}
+            {/* Ispravka: koristimo start_date i end_date */}
+            <p className="text-sm">
+              Od: <span className="font-medium">{format(new Date(rental.start_date), 'dd.MM.yyyy')}</span>
+            </p>
+            <p className="text-sm">
+              Do: <span className="font-medium">{format(new Date(rental.end_date), 'dd.MM.yyyy')}</span>
+            </p>
             
             <p className="text-sm mt-2">
               Status: 
@@ -300,11 +289,11 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
             </p>
           </div>
 
-          {/* Notes for reservations */}
-          {rental.notes && (
+          {/* Notes for reservations - dodajemo check za notes polje */}
+          {(rental as any).notes && (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Napomene</h3>
-              <p className="text-sm text-gray-700">{rental.notes}</p>
+              <p className="text-sm text-gray-700">{(rental as any).notes}</p>
             </div>
           )}
 
