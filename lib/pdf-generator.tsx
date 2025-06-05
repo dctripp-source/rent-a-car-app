@@ -3,17 +3,41 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, pdf, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// Register fonts if needed
-// Font.register({
-//   family: 'Roboto',
-//   src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/Roboto-Regular.ttf'
-// });
+// Registruj Open Sans font koji podržava srpska slova
+Font.register({
+  family: 'OpenSans',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v40/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4taVQUwaEQXjN_mQ.ttf',
+      fontWeight: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v40/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4kaVQUwaEQXjN_mQ.ttf',
+      fontWeight: 'bold',
+    },
+  ],
+});
+
+// Alternativno, možete koristiti Roboto
+Font.register({
+  family: 'Roboto',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.ttf',
+      fontWeight: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.ttf',
+      fontWeight: 'bold',
+    },
+  ],
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 40,
     fontSize: 12,
-    fontFamily: 'Helvetica',
+    fontFamily: 'OpenSans', // Promena sa 'Helvetica' na 'OpenSans'
   },
   header: {
     marginBottom: 30,
@@ -23,6 +47,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    fontFamily: 'OpenSans',
   },
   section: {
     marginBottom: 20,
@@ -31,6 +56,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 10,
+    fontFamily: 'OpenSans',
   },
   row: {
     flexDirection: 'row',
@@ -39,9 +65,11 @@ const styles = StyleSheet.create({
   label: {
     width: 150,
     fontWeight: 'bold',
+    fontFamily: 'OpenSans',
   },
   value: {
     flex: 1,
+    fontFamily: 'OpenSans',
   },
   table: {
     marginTop: 20,
@@ -60,11 +88,13 @@ const styles = StyleSheet.create({
   },
   tableCol: {
     flex: 1,
+    fontFamily: 'OpenSans',
   },
   disclaimer: {
     marginTop: 30,
     fontSize: 10,
     textAlign: 'justify',
+    fontFamily: 'OpenSans',
   },
   signature: {
     marginTop: 50,
@@ -80,6 +110,14 @@ const styles = StyleSheet.create({
     borderTopColor: '#000',
     marginTop: 50,
     marginBottom: 5,
+  },
+  textNormal: {
+    fontFamily: 'OpenSans',
+    fontWeight: 'normal',
+  },
+  textBold: {
+    fontFamily: 'OpenSans',
+    fontWeight: 'bold',
   },
 });
 
@@ -100,6 +138,21 @@ interface ContractData {
   client_id_number?: string;
 }
 
+// Funkcija za normalizaciju teksta (konvertuje specifične karaktere)
+const normalizeText = (text: string): string => {
+  return text
+    .replace(/č/g, 'č')
+    .replace(/ć/g, 'ć')
+    .replace(/š/g, 'š')
+    .replace(/đ/g, 'đ')
+    .replace(/ž/g, 'ž')
+    .replace(/Č/g, 'Č')
+    .replace(/Ć/g, 'Ć')
+    .replace(/Š/g, 'Š')
+    .replace(/Đ/g, 'Đ')
+    .replace(/Ž/g, 'Ž');
+};
+
 const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const startDate = new Date(data.start_date);
   const endDate = new Date(data.end_date);
@@ -110,24 +163,24 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
-          <Text>Broj ugovora: {data.id}/{new Date().getFullYear()}</Text>
-          <Text>Datum: {format(new Date(), 'dd.MM.yyyy')}</Text>
+          <Text style={styles.textNormal}>Broj ugovora: {data.id}/{new Date().getFullYear()}</Text>
+          <Text style={styles.textNormal}>Datum: {format(new Date(), 'dd.MM.yyyy')}</Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. UGOVORNE STRANE</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Iznajmljivač:</Text>
-            <Text style={styles.value}>Rent-a-Car Company d.o.o.</Text>
+            <Text style={styles.value}>Novera Rent d.o.o.</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Adresa:</Text>
             <Text style={styles.value}>Prijedor, Republika Srpska</Text>
           </View>
-          <Text style={{ marginTop: 10 }}>i</Text>
+          <Text style={[styles.textNormal, { marginTop: 10 }]}>i</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Klijent:</Text>
-            <Text style={styles.value}>{data.client_name}</Text>
+            <Text style={styles.value}>{normalizeText(data.client_name)}</Text>
           </View>
           {data.client_id_number && (
             <View style={styles.row}>
@@ -138,7 +191,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           {data.client_address && (
             <View style={styles.row}>
               <Text style={styles.label}>Adresa:</Text>
-              <Text style={styles.value}>{data.client_address}</Text>
+              <Text style={styles.value}>{normalizeText(data.client_address)}</Text>
             </View>
           )}
           <View style={styles.row}>
@@ -157,7 +210,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           <Text style={styles.sectionTitle}>2. PREDMET UGOVORA</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Vozilo:</Text>
-            <Text style={styles.value}>{data.brand} {data.model} ({data.year})</Text>
+            <Text style={styles.value}>{normalizeText(data.brand)} {normalizeText(data.model)} ({data.year})</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Registarski broj:</Text>
@@ -194,22 +247,22 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         </View>
 
         <View style={styles.disclaimer}>
-          <Text style={styles.sectionTitle}>5. USLOVI KORIŠTENJA</Text>
-          <Text>
-            Klijent se obavezuje da će vozilo koristiti u skladu sa pravilima saobraćaja i da će ga vratiti u istom stanju u kojem ga je preuzeo. 
+          <Text style={styles.sectionTitle}>5. USLOVI KORIŠĆENJA</Text>
+          <Text style={styles.textNormal}>
+            {normalizeText(`Klijent se obavezuje da će vozilo koristiti u skladu sa pravilima saobraćaja i da će ga vratiti u istom stanju u kojem ga je preuzeo. 
             Klijent snosi punu odgovornost za sve štete nastale tokom perioda iznajmljivanja. 
-            U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u iznosu od 50% dnevne cijene za svaki dan kašnjenja.
+            U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u iznosu od 50% dnevne cijene za svaki dan kašnjenja.`)}
           </Text>
         </View>
 
         <View style={styles.signature}>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
-            <Text>Iznajmljivač</Text>
+            <Text style={styles.textNormal}>Iznajmljivač</Text>
           </View>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
-            <Text>Klijent</Text>
+            <Text style={styles.textNormal}>Klijent</Text>
           </View>
         </View>
       </Page>
