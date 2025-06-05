@@ -12,7 +12,11 @@ import {
   Home, 
   LogOut, 
   Menu,
-  X 
+  X,
+  Settings,
+  FileText,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -27,19 +31,17 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-
-  useEffect(() => {
-  // Refresh dashboard kada se vratite na dashboard stranicu
-  if (pathname === '/dashboard') {
-    // Trigger refresh
-    window.dispatchEvent(new Event('dashboard-refresh'));
-  }
-}, [pathname]);
-
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
-    
+    // Refresh dashboard kada se vratite na dashboard stranicu
+    if (pathname === '/dashboard') {
+      // Trigger refresh
+      window.dispatchEvent(new Event('dashboard-refresh'));
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     const checkAuth = async () => {
       try {
         // Čekajte da se auth state učita
@@ -87,6 +89,13 @@ export default function DashboardLayout({
     { href: '/dashboard/clients', label: 'Klijenti', icon: Users },
   ];
 
+  const settingsItems = [
+    { href: '/dashboard/settings/contract', label: 'Ugovor', icon: FileText },
+  ];
+
+  // Check if current path is in settings
+  const isSettingsActive = pathname.startsWith('/dashboard/settings');
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar backdrop */}
@@ -114,11 +123,14 @@ export default function DashboardLayout({
         <nav className="mt-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center px-6 py-3 text-white hover:bg-blue-800 hover:text-white transition-colors"
+                className={`flex items-center px-6 py-3 text-white hover:bg-blue-800 transition-colors ${
+                  isActive ? 'bg-blue-800 border-r-4 border-blue-400' : ''
+                }`}
                 onClick={() => setSidebarOpen(false)}
               >
                 <Icon className="h-5 w-5 mr-3" />
@@ -126,6 +138,48 @@ export default function DashboardLayout({
               </Link>
             );
           })}
+
+          {/* Settings submenu */}
+          <div>
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className={`w-full flex items-center justify-between px-6 py-3 text-white hover:bg-blue-800 transition-colors ${
+                isSettingsActive ? 'bg-blue-800' : ''
+              }`}
+            >
+              <div className="flex items-center">
+                <Settings className="h-5 w-5 mr-3" />
+                Podešavanja
+              </div>
+              {settingsOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+            
+            {settingsOpen && (
+              <div className="bg-blue-900">
+                {settingsItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center px-12 py-2 text-white hover:bg-blue-800 transition-colors ${
+                        isActive ? 'bg-blue-800 border-r-4 border-blue-400' : ''
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon className="h-4 w-4 mr-3" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="absolute bottom-0 w-full p-6">

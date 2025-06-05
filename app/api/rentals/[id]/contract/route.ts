@@ -1,8 +1,18 @@
 // app/api/rentals/[id]/contract/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
-import { generateContract } from '@/lib/jspdf-contract-generator';
+import { generateContract } from '@/lib/pdf-generator';
 import { verifyToken } from '@/lib/verify-token';
+
+interface ContractTemplate {
+  company_name: string;
+  company_address: string;
+  company_phone?: string;
+  company_email?: string;
+  contract_terms: string;
+  penalty_rate: number;
+  logo_url?: string;
+}
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +67,49 @@ export async function GET(
       );
     }
 
+    // Get user's contract template
+    const templateQuery = await sql`
+      SELECT * FROM contract_templates 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    // Create properly typed template object
+    let contractTemplate: ContractTemplate;
+    
+    if (templateQuery.length > 0) {
+      const dbTemplate = templateQuery[0];
+      contractTemplate = {
+        company_name: String(dbTemplate.company_name || ''),
+        company_address: String(dbTemplate.company_address || ''),
+        company_phone: dbTemplate.company_phone ? String(dbTemplate.company_phone) : undefined,
+        company_email: dbTemplate.company_email ? String(dbTemplate.company_email) : undefined,
+        contract_terms: String(dbTemplate.contract_terms || ''),
+        penalty_rate: Number(dbTemplate.penalty_rate || 50.00),
+        logo_url: dbTemplate.logo_url ? String(dbTemplate.logo_url) : undefined
+      };
+    } else {
+      // Use default template if none exists
+      contractTemplate = {
+        company_name: 'Rent-a-Car Company',
+        company_address: 'Adresa kompanije',
+        company_phone: undefined,
+        company_email: undefined,
+        contract_terms: `Klijent se obavezuje da će vozilo koristiti u skladu sa pravilima saobraćaja i da će ga vratiti u istom stanju u kojem ga je preuzeo. 
+Klijent snosi punu odgovornost za sve štete nastale tokom perioda iznajmljivanja. 
+U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u iznosu od {penalty_rate}% dnevne cijene za svaki dan kašnjenja.
+
+Dodatni uslovi:
+- Vozilo se preuzima sa punim rezervoarom i vraća sa punim rezervoarom
+- Zabranjeno je pušenje u vozilu
+- Zabranjeno je prevoz kućnih ljubimaca bez prethodnog odobrenja
+- Maksimalna dozvoljena brzina je ograničena na 130 km/h na autoputu`,
+        penalty_rate: 50.00,
+        logo_url: undefined
+      };
+    }
+
     // Map data for PDF generation
     const contractData = {
       id: rental[0].id,
@@ -75,17 +128,12 @@ export async function GET(
       client_id_number: rental[0].client_id_number || undefined,
     };
 
-    // Generišite PDF buffer
-    const pdfBuffer = await generateContract(contractData);
+    const pdfBuffer = await generateContract(contractData, contractTemplate);
 
-    // Konvertujte u Buffer ako je potrebno
-    const buffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
-
-    return new NextResponse(buffer, {
+    return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="ugovor-${rentalId}.pdf"`,
-        'Cache-Control': 'no-cache', // Dodajte ovo da izbegnete keširanje
       },
     });
   } catch (error) {
