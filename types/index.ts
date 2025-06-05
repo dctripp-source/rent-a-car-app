@@ -33,7 +33,7 @@ export interface Rental {
   start_date: string;
   end_date: string;
   total_price: number;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'completed' | 'cancelled' | 'reserved';
   created_at?: Date;
   updated_at?: Date;
   vehicle?: Vehicle;
