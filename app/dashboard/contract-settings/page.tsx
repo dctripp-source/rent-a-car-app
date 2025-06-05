@@ -1,4 +1,4 @@
-// app/dashboard/contract-settings/page.tsx
+// app/dashboard/contract-settings/page.tsx - Pojednostavljena verzija
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -13,23 +13,12 @@ interface ContractTemplate {
   contract_terms: string;
   penalty_rate: number;
   logo_url?: string;
-  // Novi podaci
   jib_number?: string;
   bank_account?: string;
   owner_name?: string;
-  contract_style: 'simple' | 'detailed' | 'jandra_style';
-  include_km_fields: boolean;
-  include_driver_license: boolean;
-  include_id_details: boolean;
   fuel_policy?: string;
   additional_notes?: string;
 }
-
-const contractStyles = [
-  { value: 'simple', label: 'Jednostavan ugovor', description: 'Osnovni ugovor sa minimalnim podacima' },
-  { value: 'detailed', label: 'Detaljan ugovor', description: 'Ugovor sa dodatnim podacima o klijentu' },
-  { value: 'jandra_style', label: 'Jandra Cars stil', description: 'Profesionalni ugovor sa svim detaljima' }
-];
 
 export default function ContractSettingsPage() {
   const { fetchWithAuth } = useApi();
@@ -38,16 +27,19 @@ export default function ContractSettingsPage() {
     company_address: '',
     company_phone: '',
     company_email: '',
-    contract_terms: '',
+    contract_terms: `Korisnik snosi punu materijalnu, krivicnu i prekrsajnu odgovornost nad vozilom, te se obavezuje platiti nastala ostecenja i saobracajne prekrsaje u periodu trajanja najma.
+
+The renter bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
+
+U slucaju kasnjenja sa vracanjem vozila, klijent je duzan platiti penale u iznosu od {penalty_rate}% dnevne cijene za svaki dan kasnjenja.
+
+Dodatni uslovi:
+- Vozilo se preuzima sa punim rezervoarom i vraca sa punim rezervoarom
+- Zabranjeno je pusenje u vozilu  
+- Zabranjeno je prevoz kucnih ljubimaca bez prethodnog odobrenja
+- Maksimalna dozvoljena brzina je ogranicena na 130 km/h na autoputu`,
     penalty_rate: 50.00,
-    jib_number: '',
-    bank_account: '',
-    owner_name: '',
-    contract_style: 'simple',
-    include_km_fields: false,
-    include_driver_license: false,
-    include_id_details: false,
-    fuel_policy: 'Vozilo se preuzima sa punim rezervoarom goriva, i korisnik treba da isti vrati pun prilikom vraćanja vozila.',
+    fuel_policy: 'Napomena: vozilo se preuzima sa punim rezervoarom goriva, i korisnik treba da isti vrati pun prilikom vracanja vozila.',
     additional_notes: ''
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -55,35 +47,10 @@ export default function ContractSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     fetchTemplate();
   }, []);
-
-  useEffect(() => {
-    // Auto-update fields based on contract style
-    if (formData.contract_style === 'jandra_style') {
-      setFormData(prev => ({
-        ...prev,
-        include_km_fields: true,
-        include_driver_license: true,
-        include_id_details: true,
-        contract_terms: `Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.
-
-The renter bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
-
-U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u iznosu od {penalty_rate}% dnevne cijene za svaki dan kašnjenja.`,
-        fuel_policy: 'Napomena: vozilo se preuzima sa punim rezervoarom goriva, i korisnik treba da isti vrati pun prilikom vraćanja vozila. / Note: the vehicle is picked up with a full fuel tank, and the user should return it full when returning the vehicle.'
-      }));
-    } else if (formData.contract_style === 'detailed') {
-      setFormData(prev => ({
-        ...prev,
-        include_driver_license: true,
-        include_id_details: true
-      }));
-    }
-  }, [formData.contract_style]);
 
   const fetchTemplate = async () => {
     try {
@@ -108,21 +75,12 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked,
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: name === 'penalty_rate' ? parseFloat(value) || 0 : value,
-      }));
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'penalty_rate' ? parseFloat(value) || 0 : value,
+    }));
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,11 +143,6 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
     }
   };
 
-  const handlePreview = async () => {
-    // Implementirajte preview funkcionalnost
-    setPreviewMode(true);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -199,19 +152,10 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <FileText className="h-8 w-8 text-blue-600 mr-3" />
-          <h1 className="text-2xl font-bold text-gray-900">Podešavanje ugovora</h1>
-        </div>
-        <button
-          onClick={handlePreview}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-        >
-          <Eye className="h-4 w-4 mr-2" />
-          Pregled ugovora
-        </button>
+    <div className="max-w-4xl mx-auto">
+      <div className="flex items-center mb-6">
+        <FileText className="h-8 w-8 text-blue-600 mr-3" />
+        <h1 className="text-2xl font-bold text-gray-900">Podešavanje ugovora</h1>
       </div>
 
       {error && (
@@ -226,36 +170,15 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Leva kolona - Osnovne informacije */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Building2 className="h-5 w-5 mr-2" />
-            Informacije o kompaniji
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stil ugovora <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="contract_style"
-                value={formData.contract_style}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                {contractStyles.map(style => (
-                  <option key={style.value} value={style.value}>
-                    {style.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {contractStyles.find(s => s.value === formData.contract_style)?.description}
-              </p>
-            </div>
-
+      <div className="bg-white rounded-lg shadow p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informacije o kompaniji */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Building2 className="h-5 w-5 mr-2" />
+              Informacije o kompaniji
+            </h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -268,7 +191,7 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="JANDRA CARS s.p."
+                  placeholder="Novera Rent d.o.o."
                 />
               </div>
 
@@ -282,7 +205,7 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
                   value={formData.owner_name}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Vl Desanka Jandrić"
+                  placeholder="Marko Marković"
                 />
               </div>
 
@@ -324,7 +247,7 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
                   value={formData.company_email}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="jandra.cars@gmail.com"
+                  placeholder="info@noverarent.com"
                 />
               </div>
 
@@ -338,12 +261,12 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
                   value={formData.company_phone}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="+387 66 11 77 86"
+                  placeholder="+387 65 123 456"
                 />
               </div>
             </div>
 
-            <div>
+            <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Adresa kompanije <span className="text-red-500">*</span>
               </label>
@@ -354,169 +277,175 @@ U slučaju kašnjenja sa vraćanjem vozila, klijent je dužan platiti penale u i
                 required
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Rade Kondića 6c, Banja Luka"
+                placeholder="Ulica i broj, Grad, Poštanski broj"
               />
             </div>
+          </div>
 
-            {/* Logo upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Logo kompanije</label>
-              <div className="flex items-center space-x-4">
-                {formData.logo_url && (
-                  <div className="flex-shrink-0">
-                    <img
-                      src={formData.logo_url}
-                      alt="Company Logo"
-                      className="h-16 w-16 object-contain border border-gray-300 rounded"
-                    />
-                  </div>
-                )}
-                
-                <div className="flex-1">
-                  <label className="cursor-pointer">
-                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center hover:border-gray-400 transition-colors">
-                      <Upload className="mx-auto h-6 w-6 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {logoFile ? logoFile.name : 'Upload logo'}
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoChange}
-                      className="hidden"
-                    />
-                  </label>
+          {/* Logo kompanije */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Logo kompanije</h2>
+            
+            <div className="flex items-center space-x-4">
+              {formData.logo_url && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={formData.logo_url}
+                    alt="Company Logo"
+                    className="h-16 w-16 object-contain border border-gray-300 rounded"
+                  />
                 </div>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        {/* Desna kolona - Uslovi i opcije */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Uslovi ugovora i opcije</h2>
-          
-          <div className="space-y-4">
-            {/* Contract options */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Uključi u ugovor:</label>
-              <div className="space-y-2">
-                <label className="flex items-center">
+              )}
+              
+              <div className="flex-1">
+                <label className="cursor-pointer">
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center hover:border-gray-400 transition-colors">
+                    <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">
+                      {logoFile ? logoFile.name : 'Kliknite za upload logo-a'}
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG max 2MB</p>
+                  </div>
                   <input
-                    type="checkbox"
-                    name="include_km_fields"
-                    checked={formData.include_km_fields}
-                    onChange={handleChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="hidden"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Početna/završna kilometraža</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="include_driver_license"
-                    checked={formData.include_driver_license}
-                    onChange={handleChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Podaci o vozačkoj dozvoli</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="include_id_details"
-                    checked={formData.include_id_details}
-                    onChange={handleChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Detaljni podaci o ličnoj karti</span>
                 </label>
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Procenat penala za kašnjenje (%)
-              </label>
-              <input
-                type="number"
-                name="penalty_rate"
-                value={formData.penalty_rate}
-                onChange={handleChange}
-                min="0"
-                max="100"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+          {/* Procenat penala */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Procenat penala za kašnjenje (%)
+            </label>
+            <input
+              type="number"
+              name="penalty_rate"
+              value={formData.penalty_rate}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              step="0.01"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Politika goriva */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Politika goriva
+            </label>
+            <textarea
+              name="fuel_policy"
+              value={formData.fuel_policy}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Napomena o politici goriva..."
+            />
+          </div>
+
+          {/* Uslovi ugovora */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Uslovi ugovora <span className="text-red-500">*</span>
+            </label>
+            <p className="text-sm text-gray-600 mb-2">
+              Možete koristiti <code>{'{penalty_rate}'}</code> da dinamički ubacite procenat penala.
+            </p>
+            <textarea
+              name="contract_terms"
+              value={formData.contract_terms}
+              onChange={handleChange}
+              required
+              rows={12}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Unesite uslove i odredbe ugovora..."
+            />
+          </div>
+
+          {/* Submit dugme */}
+          <div className="flex justify-end pt-6 border-t border-gray-200">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Čuvanje...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Sačuvaj template
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Preview sekcija */}
+      <div className="mt-6 bg-gray-50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Kako će izgledati vaš ugovor:</h3>
+        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <div className="space-y-4 text-sm text-gray-600">
+            <div className="flex justify-between items-start">
+              <div className="text-left">
+                <div className="w-12 h-12 bg-gray-200 rounded mb-2"></div>
+                <p className="text-xs">Logo (gore lijevo)</p>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold">{formData.company_name || 'Naziv kompanije'}</p>
+                <p>{formData.company_address || 'Adresa kompanije'}</p>
+                <p>{formData.company_phone || 'Telefon'}</p>
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Politika goriva
-              </label>
-              <textarea
-                name="fuel_policy"
-                value={formData.fuel_policy}
-                onChange={handleChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Napomena o politici goriva..."
-              />
+            
+            <div className="border-t pt-4">
+              <h4 className="text-center text-lg font-bold">UGOVOR O IZNAJMLJIVANJU VOZILA</h4>
+              <p className="text-center">Broj: 001/2025</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Uslovi ugovora
-              </label>
-              <textarea
-                name="contract_terms"
-                value={formData.contract_terms}
-                onChange={handleChange}
-                required
-                rows={8}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Unesite uslove i odredbe ugovora..."
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Koristite <code>{'{penalty_rate}'}</code> za dinamičko ubacivanje procenta penala.
-              </p>
+            
+            <div className="border border-gray-300 rounded p-4">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>Ime i prezime korisnika:</div><div>Danijel Danijel</div>
+                <div>Adresa korisnika:</div><div>Sime Miljuša 5</div>
+                <div>Telefon korisnika:</div><div>065 123 456</div>
+                <div>Email korisnika:</div><div>danijel@email.com</div>
+                <div className="col-span-2 border-t pt-2"></div>
+                <div>Vozilo:</div><div>Toyota Corolla (2020)</div>
+                <div>Registarske oznake:</div><div>PD-123-AB</div>
+                <div className="col-span-2 border-t pt-2"></div>
+                <div>Datum početka najma:</div><div>05.01.2025</div>
+                <div>Datum završetka najma:</div><div>10.01.2025</div>
+                <div>Broj dana:</div><div>5</div>
+                <div>Cijena po danu:</div><div>50.00 KM</div>
+                <div className="col-span-2 border-t pt-2 font-bold"></div>
+                <div className="font-bold">UKUPNA CIJENA:</div><div className="font-bold">250.00 KM</div>
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dodatne napomene
-              </label>
-              <textarea
-                name="additional_notes"
-                value={formData.additional_notes}
-                onChange={handleChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Dodatne napomene ili instrukcije..."
-              />
+            
+            <div className="text-left text-xs bg-gray-50 p-3 rounded">
+              <p className="font-semibold mb-2">USLOVI UGOVORA:</p>
+              <p className="truncate">{formData.contract_terms.substring(0, 100)}...</p>
             </div>
-
-            {/* Submit button */}
-            <div className="pt-6 border-t border-gray-200">
-              <button
-                type="submit"
-                disabled={saving}
-                onClick={handleSubmit}
-                className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Čuvanje...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Sačuvaj template
-                  </>
-                )}
-              </button>
+            
+            <div className="flex justify-between pt-4">
+              <div className="text-center">
+                <div className="border-t border-gray-400 w-20 mb-1"></div>
+                <p className="text-xs">Iznajmljivač</p>
+              </div>
+              <div className="text-center">
+                <div className="border-t border-gray-400 w-20 mb-1"></div>
+                <p className="text-xs">Korisnik</p>
+              </div>
             </div>
           </div>
         </div>
