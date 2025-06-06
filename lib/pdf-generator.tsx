@@ -3,16 +3,16 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// Registruj Roboto font koji podržava Unicode karaktere
+// Registruj font iz public foldera
 Font.register({
-  family: 'Roboto',
+  family: 'DejaVuSans',
   fonts: [
     {
-      src: 'https://cdnjs.cloudflare.com/ajax/libs/google-fonts/1.0.0/roboto/Roboto-Regular.ttf',
+      src: '/fonts/DejaVuSans.ttf', // Stavi font u public/fonts/
       fontWeight: 'normal',
     },
     {
-      src: 'https://cdnjs.cloudflare.com/ajax/libs/google-fonts/1.0.0/roboto/Roboto-Bold.ttf',
+      src: '/fonts/DejaVuSans-Bold.ttf', // Stavi font u public/fonts/
       fontWeight: 'bold',
     },
   ]
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 11,
-    fontFamily: 'Roboto', // Koristi Roboto umjesto Helvetica
+    fontFamily: 'DejaVuSans', // Koristi custom font
     lineHeight: 1.3,
   },
   header: {
@@ -87,20 +87,19 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     width: '100%',
   },
-  // Optimizovani labeli za kratke datume
   labelLeft: {
-    width: 110, // Povećano da se ne lomi "Datum izdavanja"
+    width: 110,
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
   },
   valueLeft: {
-    width: 110, // Dovoljno za datum format dd.MM.yyyy
+    width: 110,
     fontSize: 9,
     marginRight: 10,
   },
   labelRight: {
-    width: 110, // Povećano za duže labele
+    width: 110,
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
@@ -235,7 +234,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const endDate = new Date(data.end_date);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-  // Default company data ako nije prosleđeno
   const company = data.company || {
     company_name: 'NOVERA RENT d.o.o.',
     contact_person: 'Desanka Jandrić',
@@ -259,7 +257,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header sa dinamičkim podacima o firmi */}
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
             <Text style={styles.companyName}>{company.company_name}</Text>
@@ -276,7 +274,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           </View>
         </View>
 
-        {/* Naslov ugovora */}
+        {/* Naslov */}
         <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
         <Text style={styles.contractNumber}>Broj: {String(data.id).padStart(3, '0')}/{new Date().getFullYear()}</Text>
 
@@ -284,7 +282,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O KORISNIKU:</Text>
           <View style={styles.infoGrid}>
-            {/* Red 1: Ime i telefon */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Ime i prezime:</Text>
               <Text style={styles.valueLeft}>{data.client_name}</Text>
@@ -292,7 +289,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{data.client_phone || 'N/A'}</Text>
             </View>
             
-            {/* Red 2: broj LK i datum izdavanja */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Br. lične karte:</Text>
               <Text style={styles.valueLeft}>{data.client_id_number || 'N/A'}</Text>
@@ -300,7 +296,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{formatDateSafe(data.id_card_issue_date)}</Text>
             </View>
 
-            {/* Red 3: Validno do i izdato od */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Vrijedi do:</Text>
               <Text style={styles.valueLeft}>{formatDateSafe(data.id_card_valid_until)}</Text>
@@ -308,7 +303,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{data.id_card_issued_by || 'N/A'}</Text>
             </View>
 
-            {/* Red 4: broj vozačke i datum izdavanja */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Br. vozačke dozvole:</Text>
               <Text style={styles.valueLeft}>{data.driving_license_number || 'N/A'}</Text>
@@ -316,7 +310,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{formatDateSafe(data.driving_license_issue_date)}</Text>
             </View>
 
-            {/* Red 5: Validno do i izdato od */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Vrijedi do:</Text>
               <Text style={styles.valueLeft}>{formatDateSafe(data.driving_license_valid_until)}</Text>
@@ -324,7 +317,6 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{data.driving_license_issued_by || 'N/A'}</Text>
             </View>
             
-            {/* Red 6: Adresa - puna širina */}
             <View style={styles.infoRowFull}>
               <Text style={styles.labelFull}>Adresa:</Text>
               <Text style={styles.valueFull}>{data.client_address || 'N/A'}</Text>
@@ -380,7 +372,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           </View>
         </View>
 
-        {/* Uslovi ugovora - dinamički iz baze */}
+        {/* Uslovi ugovora */}
         <View style={styles.terms}>
           <Text style={styles.termsTitle}>USLOVI UGOVORA:</Text>
           <Text>{company.terms_and_conditions}</Text>
@@ -412,19 +404,13 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 export async function generateContract(contractData: ContractData): Promise<Buffer> {
   try {
     console.log('=== PDF GENERATION START ===');
-    console.log('Contract data received:');
-    console.log('- Company name:', contractData.company?.company_name);
-    console.log('- Contact person:', contractData.company?.contact_person);
-    console.log('- Client name:', contractData.client_name);
     
     const doc = <ContractDocument data={contractData} />;
-    
     const asPdf = pdf(doc);
     const blob = await asPdf.toBlob();
     const buffer = await blob.arrayBuffer();
     
     console.log('PDF generated successfully, size:', buffer.byteLength);
-    console.log('=== PDF GENERATION END ===');
     return Buffer.from(buffer);
   } catch (error: unknown) {
     console.error('=== PDF GENERATION ERROR ===');
