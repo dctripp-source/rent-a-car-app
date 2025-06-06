@@ -18,12 +18,12 @@ export interface Vehicle {
 export interface Client {
   id: number;
   firebase_uid?: string;
-  name: string;
-  email: string;
+  name: string; // OBAVEZNO - jedino obavezno polje
+  email?: string; // opciono
   phone?: string;
   address?: string;
-  id_number?: string;
-  driving_license_number: string; // obavezno polje
+  id_number?: string; // opciono
+  driving_license_number?: string; // opciono - više nije obavezno
   id_card_issue_date?: string;
   id_card_valid_until?: string;
   id_card_issued_by?: string;

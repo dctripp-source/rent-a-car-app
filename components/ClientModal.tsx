@@ -34,7 +34,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
     if (client) {
       setFormData({
         name: client.name,
-        email: client.email,
+        email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
         id_number: client.id_number || '',
@@ -63,17 +63,9 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
     setLoading(true);
 
     try {
-      // Validacija obaveznih polja - dodana nova obavezna polja
+      // Validacija obaveznih polja - samo ime i prezime
       if (!formData.name.trim()) {
         throw new Error('Ime i prezime su obavezni');
-      }
-      
-      if (!formData.id_number?.trim()) {
-        throw new Error('Broj lične karte je obavezan');
-      }
-      
-      if (!formData.driving_license_number?.trim()) {
-        throw new Error('Broj vozačke dozvole je obavezan');
       }
 
       const url = client 
@@ -199,14 +191,13 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Broj lične karte <span className="text-red-500">*</span>
+                    Broj lične karte
                   </label>
                   <input
                     type="text"
                     name="id_number"
                     value={formData.id_number}
                     onChange={handleChange}
-                    required
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="123456789"
                   />
@@ -263,14 +254,13 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Broj vozačke dozvole <span className="text-red-500">*</span>
+                    Broj vozačke dozvole
                   </label>
                   <input
                     type="text"
                     name="driving_license_number"
                     value={formData.driving_license_number}
                     onChange={handleChange}
-                    required
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="40M7894562"
                   />

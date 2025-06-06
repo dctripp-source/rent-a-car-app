@@ -87,24 +87,10 @@ export async function PUT(
       driving_license_issued_by
     } = body;
 
-    // Validate required fields - ažurirane validacije
+    // Validate required fields - samo ime i prezime
     if (!name?.trim()) {
       return NextResponse.json(
         { error: 'Name is required' }, 
-        { status: 400 }
-      );
-    }
-    
-    if (!id_number?.trim()) {
-      return NextResponse.json(
-        { error: 'ID number is required' }, 
-        { status: 400 }
-      );
-    }
-    
-    if (!driving_license_number?.trim()) {
-      return NextResponse.json(
-        { error: 'Driving license number is required' }, 
         { status: 400 }
       );
     }
@@ -122,20 +108,7 @@ export async function PUT(
       );
     }
 
-    // Check if ID number is being changed and already exists
-    const idCheck = await sql`
-      SELECT id FROM clients 
-      WHERE id_number = ${id_number} 
-        AND user_id = ${userId} 
-        AND id != ${id}
-    `;
-
-    if (idCheck.length > 0) {
-      return NextResponse.json(
-        { error: 'Another client with this ID number already exists' }, 
-        { status: 409 }
-      );
-    }
+    // Uklanjamo provjeru duplikata jer nema obaveznih unique polja
 
     const result = await sql`
       UPDATE clients 

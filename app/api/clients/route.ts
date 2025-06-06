@@ -58,40 +58,16 @@ export async function POST(request: NextRequest) {
       driving_license_issued_by
     } = body;
 
-    // Validate required fields - ažurirane validacije
+    // Validate required fields - samo ime i prezime
     if (!name?.trim()) {
       return NextResponse.json(
         { error: 'Name is required' }, 
         { status: 400 }
       );
     }
-    
-    if (!id_number?.trim()) {
-      return NextResponse.json(
-        { error: 'ID number is required' }, 
-        { status: 400 }
-      );
-    }
-    
-    if (!driving_license_number?.trim()) {
-      return NextResponse.json(
-        { error: 'Driving license number is required' }, 
-        { status: 400 }
-      );
-    }
 
-    // Check if client with this ID number already exists for this user (umjesto email)
-    const existingClient = await sql`
-      SELECT id FROM clients 
-      WHERE id_number = ${id_number} AND user_id = ${userId}
-    `;
-
-    if (existingClient.length > 0) {
-      return NextResponse.json(
-        { error: 'Client with this ID number already exists' }, 
-        { status: 409 }
-      );
-    }
+    // Uklanjamo provjeru duplikata jer nema obaveznih unique polja
+    // Sada možemo imati klijente bez email-a ili ID broj-a
 
     const result = await sql`
       INSERT INTO clients (
