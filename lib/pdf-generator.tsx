@@ -405,7 +405,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Datum: {format(new Date(), 'dd.MM.yyyy')} | Mjesto: Prijedor, Republika Srpska
+          Datum: {format(new Date(), 'dd.MM.yyyy')} | Mjesto: Banja Luka, Republika Srpska
         </Text>
       </Page>
     </Document>
