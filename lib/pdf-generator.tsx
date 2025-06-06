@@ -3,16 +3,16 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// Registruj fontove za srpska slova
+// Registruj Roboto font koji podržava Unicode karaktere
 Font.register({
-  family: 'Arial',
+  family: 'Roboto',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/opensans/v27/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf',
+      src: 'https://cdnjs.cloudflare.com/ajax/libs/google-fonts/1.0.0/roboto/Roboto-Regular.ttf',
       fontWeight: 'normal',
     },
     {
-      src: 'https://fonts.gstatic.com/s/opensans/v27/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1y4gaVc.ttf',
+      src: 'https://cdnjs.cloudflare.com/ajax/libs/google-fonts/1.0.0/roboto/Roboto-Bold.ttf',
       fontWeight: 'bold',
     },
   ]
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 11,
-    fontFamily: 'Arial', // Koristi Arial umjesto Helvetica
+    fontFamily: 'Roboto', // Koristi Roboto umjesto Helvetica
     lineHeight: 1.3,
   },
   header: {
@@ -89,18 +89,18 @@ const styles = StyleSheet.create({
   },
   // Optimizovani labeli za kratke datume
   labelLeft: {
-    width: 100, // Povećano sa 90 na 100
+    width: 110, // Povećano da se ne lomi "Datum izdavanja"
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
   },
   valueLeft: {
-    width: 120, // Fiksna širina umjesto flex
+    width: 110, // Dovoljno za datum format dd.MM.yyyy
     fontSize: 9,
     marginRight: 10,
   },
   labelRight: {
-    width: 90, // Povećano sa 70 na 90
+    width: 110, // Povećano za duže labele
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   labelFull: {
-    width: 100,
+    width: 110,
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
@@ -244,7 +244,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
     email: 'novera.rent@gmail.com',
     jib: '4512970750008',
     bank_account: '562-099-8180-8643-85',
-    terms_and_conditions: 'Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.'
+    terms_and_conditions: 'Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.',
   };
 
   const formatDateSafe = (dateString?: string): string => {
@@ -280,7 +280,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
         <Text style={styles.contractNumber}>Broj: {String(data.id).padStart(3, '0')}/{new Date().getFullYear()}</Text>
 
-        {/* Podaci o korisniku - poboljšan layout */}
+        {/* Podaci o korisniku */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O KORISNIKU:</Text>
           <View style={styles.infoGrid}>
@@ -292,7 +292,7 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
               <Text style={styles.valueRight}>{data.client_phone || 'N/A'}</Text>
             </View>
             
-            {/* Red 2: broj LK i datum izdavanja - optimizovano */}
+            {/* Red 2: broj LK i datum izdavanja */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Br. lične karte:</Text>
               <Text style={styles.valueLeft}>{data.client_id_number || 'N/A'}</Text>
