@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const settings = await sql`
       SELECT * FROM company_settings 
       WHERE user_id = ${userId}
+      ORDER BY updated_at DESC
       LIMIT 1
     `;
 
@@ -30,7 +31,14 @@ export async function GET(request: NextRequest) {
         phone: '+387 66 11 77 86',
         email: 'novera.rent@gmail.com',
         jib: '4512970750008',
-        bank_account: '562-099-8180-8643-85'
+        bank_account: '562-099-8180-8643-85',
+        terms_and_conditions: `Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.
+
+The renter bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
+
+Vozilo mora biti vraćeno u istom stanju u kojem je preuzeto. U slučaju kašnjenja sa vraćanjem vozila, korisnik je dužan platiti penale u iznosu od 50% dnevne cijene za svaki dan kašnjenja.
+
+Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za taksi usluge ili bilo koje komercijalne aktivnosti bez prethodne pisane saglasnosti iznajmljivača.`
       });
     }
 
@@ -56,6 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Received company settings data:', body);
+    
     const { 
       company_name, 
       contact_person, 
@@ -63,8 +73,25 @@ export async function POST(request: NextRequest) {
       phone, 
       email, 
       jib, 
-      bank_account 
+      bank_account,
+      terms_and_conditions 
     } = body;
+
+    console.log('Extracted fields:', {
+      company_name: company_name?.length,
+      address: address?.length,
+      phone: phone?.length,
+      email: email?.length,
+      terms_and_conditions: terms_and_conditions?.length
+    });
+
+    // Validate required fields
+    if (!company_name?.trim() || !address?.trim() || !phone?.trim() || !email?.trim() || !terms_and_conditions?.trim()) {
+      return NextResponse.json(
+        { error: 'Company name, address, phone, email and terms are required' }, 
+        { status: 400 }
+      );
+    }
 
     // Check if settings exist
     const existing = await sql`
@@ -77,13 +104,14 @@ export async function POST(request: NextRequest) {
       // Update existing
       result = await sql`
         UPDATE company_settings 
-        SET company_name = ${company_name},
-            contact_person = ${contact_person},
-            address = ${address},
-            phone = ${phone},
-            email = ${email},
-            jib = ${jib},
-            bank_account = ${bank_account},
+        SET company_name = ${company_name.trim()},
+            contact_person = ${contact_person?.trim() || null},
+            address = ${address.trim()},
+            phone = ${phone.trim()},
+            email = ${email.trim()},
+            jib = ${jib?.trim() || null},
+            bank_account = ${bank_account?.trim() || null},
+            terms_and_conditions = ${terms_and_conditions.trim()},
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ${userId}
         RETURNING *
@@ -93,16 +121,18 @@ export async function POST(request: NextRequest) {
       result = await sql`
         INSERT INTO company_settings (
           company_name, contact_person, address, phone, 
-          email, jib, bank_account, user_id
+          email, jib, bank_account, terms_and_conditions, user_id
         )
         VALUES (
-          ${company_name}, ${contact_person}, ${address}, 
-          ${phone}, ${email}, ${jib}, ${bank_account}, ${userId}
+          ${company_name.trim()}, ${contact_person?.trim() || null}, ${address.trim()}, 
+          ${phone.trim()}, ${email.trim()}, ${jib?.trim() || null}, 
+          ${bank_account?.trim() || null}, ${terms_and_conditions.trim()}, ${userId}
         )
         RETURNING *
       `;
     }
 
+    console.log('Settings saved successfully:', result[0]);
     return NextResponse.json(result[0]);
   } catch (error) {
     console.error('Error saving company settings:', error);

@@ -46,7 +46,7 @@ Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za t
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithAuth('/api/settings');
+      const response = await fetchWithAuth('/api/settings/company');
       
       if (response.ok) {
         const data = await response.json();
@@ -79,7 +79,19 @@ Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za t
     setSuccessMessage('');
 
     try {
-      const response = await fetchWithAuth('/api/settings', {
+      // Debug: provjeri vrijednosti prije slanja
+      console.log('Settings being sent:', {
+        company_name: settings.company_name?.trim(),
+        contact_person: settings.contact_person?.trim(), 
+        address: settings.address?.trim(),
+        phone: settings.phone?.trim(),
+        email: settings.email?.trim(),
+        jib: settings.jib?.trim(),
+        bank_account: settings.bank_account?.trim(),
+        terms_and_conditions: settings.terms_and_conditions?.trim()
+      });
+
+      const response = await fetchWithAuth('/api/settings/company', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,6 +100,7 @@ Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za t
       });
 
       const data = await response.json();
+      console.log('Response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Greška pri čuvanju podešavanja');
