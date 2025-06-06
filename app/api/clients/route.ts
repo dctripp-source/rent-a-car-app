@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
         user_id
       )
       VALUES (
-        ${firebase_uid || userId}, ${name}, ${email}, 
+        ${firebase_uid || userId}, ${name}, ${email || null}, 
         ${phone || null}, ${address || null}, 
-        ${id_number || null}, ${driving_license_number},
+        ${id_number || null}, ${driving_license_number || null},
         ${id_card_issue_date || null}, ${id_card_valid_until || null}, ${id_card_issued_by || null},
         ${driving_license_issue_date || null}, ${driving_license_valid_until || null}, ${driving_license_issued_by || null},
         ${userId}

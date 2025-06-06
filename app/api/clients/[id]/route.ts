@@ -113,17 +113,17 @@ export async function PUT(
     const result = await sql`
       UPDATE clients 
       SET name = ${name}, 
-          email = ${email}, 
-          phone = ${phone || null}, 
-          address = ${address || null}, 
-          id_number = ${id_number || null},
-          driving_license_number = ${driving_license_number},
+          email = ${email || ''}, 
+          phone = ${phone || ''}, 
+          address = ${address || ''}, 
+          id_number = ${id_number || ''},
+          driving_license_number = ${driving_license_number || ''},
           id_card_issue_date = ${id_card_issue_date || null},
           id_card_valid_until = ${id_card_valid_until || null},
-          id_card_issued_by = ${id_card_issued_by || null},
+          id_card_issued_by = ${id_card_issued_by || ''},
           driving_license_issue_date = ${driving_license_issue_date || null},
           driving_license_valid_until = ${driving_license_valid_until || null},
-          driving_license_issued_by = ${driving_license_issued_by || null}
+          driving_license_issued_by = ${driving_license_issued_by || ''}
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;
