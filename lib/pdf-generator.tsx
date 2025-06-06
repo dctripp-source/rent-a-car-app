@@ -380,12 +380,8 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <View style={styles.terms}>
           <Text style={styles.termsTitle}>USLOVI UGOVORA:</Text>
           <Text>
-            1. Korisnik preuzima vozilo u ispravnom stanju sa punim rezervoarom goriva i obavezuje se da ga vrati u istom stanju.{'\n\n'}
-            2. Korisnik snosi punu materijalnu, krivicnu i prekrsajnu odgovornost nad vozilom tokom perioda najma.{'\n\n'}
-            3. U slucaju kasnjenja sa vracanjem vozila, korisnik je duzan platiti penale u iznosu od 50% dnevne cijene za svaki dan kasnjenja.{'\n\n'}
-            4. Zabranjeno je koriscenje vozila pod uticajem alkohola ili narkotickih sredstava.{'\n\n'}
-            5. Vozilo se ne smije koristiti za prevoz opasnih materija ili u komercijalne svrhe bez pisane saglasnosti iznajmljivaca.{'\n\n'}
-            6. Sve stete nastale tokom perioda najma su na teret korisnika.
+            Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma. {'\n\n'}
+            The renters bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
           </Text>
         </View>
 
