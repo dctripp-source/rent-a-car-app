@@ -1,8 +1,8 @@
 // app/dashboard/settings/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Save, FileText, Building, User, Mail, Phone, MapPin, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Building, Mail, Phone, MapPin, FileText, CreditCard, Hash, User } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
 interface CompanySettings {
@@ -13,44 +13,49 @@ interface CompanySettings {
   email: string;
   jib: string;
   bank_account: string;
+  terms_and_conditions: string;
 }
 
 export default function SettingsPage() {
   const { fetchWithAuth } = useApi();
   const [settings, setSettings] = useState<CompanySettings>({
-    company_name: '',
-    contact_person: '',
-    address: '',
-    phone: '',
-    email: '',
-    jib: '',
-    bank_account: '',
+    company_name: 'NOVERA RENT d.o.o.',
+    contact_person: 'Desanka Jandrić',
+    address: 'Rade Kondića 6c, Prijedor',
+    phone: '+387 66 11 77 86',
+    email: 'novera.rent@gmail.com',
+    jib: '4512970750008',
+    bank_account: '562-099-8180-8643-85',
+    terms_and_conditions: `Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.
+
+The renter bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
+
+Vozilo mora biti vraćeno u istom stanju u kojem je preuzeto. U slučaju kašnjenja sa vraćanjem vozila, korisnik je dužan platiti penale u iznosu od 50% dnevne cijene za svaki dan kašnjenja.
+
+Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za taksi usluge ili bilo koje komercijalne aktivnosti bez prethodne pisane saglasnosti iznajmljivača.`
   });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
+    setLoading(true);
     try {
-      setError('');
-      const response = await fetchWithAuth('/api/settings/company');
+      const response = await fetchWithAuth('/api/settings');
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch settings');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
+      } else {
+        console.log('No existing settings found, using defaults');
       }
-
-      const data = await response.json();
-      console.log('Loaded settings:', data);
-      setSettings(data);
     } catch (error: any) {
       console.error('Error fetching settings:', error);
-      setError(error.message || 'Greška pri učitavanju podešavanja');
     } finally {
       setLoading(false);
     }
@@ -62,18 +67,19 @@ export default function SettingsPage() {
       ...prev,
       [name]: value,
     }));
+    
+    setError('');
+    setSuccessMessage('');
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    setSaveLoading(true);
     setError('');
-    setSuccess('');
+    setSuccessMessage('');
 
     try {
-      console.log('Saving settings:', settings);
-      
-      const response = await fetchWithAuth('/api/settings/company', {
+      const response = await fetchWithAuth('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,16 +93,17 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Greška pri čuvanju podešavanja');
       }
 
-      console.log('Settings saved:', data);
-      setSuccess('Podešavanja su uspešno sačuvana!');
+      setSuccessMessage('Podešavanja su uspješno sačuvana!');
       
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
+      // Očisti poruku nakon 3 sekunde
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
     } catch (error: any) {
       console.error('Error saving settings:', error);
-      setError(error.message || 'Greška pri čuvanju podešavanja');
+      setError(error.message || 'Greška pri čuvanju podešavanja. Pokušajte ponovo.');
     } finally {
-      setSaving(false);
+      setSaveLoading(false);
     }
   };
 
@@ -111,43 +118,33 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Podešavanja ugovora</h1>
-        <div className="flex items-center text-sm text-gray-500">
-          <FileText className="h-4 w-4 mr-2" />
-          Podaci koji će se prikazati na ugovorima
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Podešavanja</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Building className="h-5 w-5 mr-2" />
-            Podaci o firmi
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Ovi podaci će biti prikazani u header-u svakog ugovora
-          </p>
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+          {error}
         </div>
+      )}
 
-        <form onSubmit={handleSave} className="p-6">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-md text-sm">
-              {error}
-            </div>
-          )}
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-md">
+          {successMessage}
+        </div>
+      )}
 
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 text-green-500 rounded-md text-sm">
-              {success}
-            </div>
-          )}
-
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Osnovni podaci o kompaniji */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <Building className="h-5 w-5 text-gray-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Podaci o kompaniji</h2>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Naziv firme */}
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Building className="h-4 w-4 inline mr-1" />
-                Naziv firme <span className="text-red-500">*</span>
+                Naziv kompanije <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -156,152 +153,167 @@ export default function SettingsPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="JANDRA CARS s.p."
+                placeholder="Naziv vaše kompanije"
               />
             </div>
 
-            {/* Kontakt osoba */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="h-4 w-4 inline mr-1" />
                 Kontakt osoba
               </label>
-              <input
-                type="text"
-                name="contact_person"
-                value={settings.contact_person}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Desanka Jandrić"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="contact_person"
+                  value={settings.contact_person}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ime i prezime kontakt osobe"
+                />
+              </div>
             </div>
 
-            {/* Telefon */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Phone className="h-4 w-4 inline mr-1" />
-                Telefon <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="phone"
-                value={settings.phone}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+387 66 11 77 86"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Mail className="h-4 w-4 inline mr-1" />
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={settings.email}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="info@firma.com"
-              />
-            </div>
-
-            {/* JIB */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <CreditCard className="h-4 w-4 inline mr-1" />
-                JIB <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="jib"
-                value={settings.jib}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="4512970750008"
-              />
-            </div>
-
-            {/* Adresa */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="h-4 w-4 inline mr-1" />
                 Adresa <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="address"
-                value={settings.address}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Rade Kondića 6c, Prijedor"
-              />
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="address"
+                  value={settings.address}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ulica, Grad"
+                />
+              </div>
             </div>
 
-            {/* Žiro račun */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Telefon <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={settings.phone}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="+387 xx xxx xxx"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="email"
+                  name="email"
+                  value={settings.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="email@kompanija.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                JIB broj
+              </label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="jib"
+                  value={settings.jib}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="JIB broj"
+                />
+              </div>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <CreditCard className="h-4 w-4 inline mr-1" />
-                Žiro račun <span className="text-red-500">*</span>
+                Žiro račun
               </label>
-              <input
-                type="text"
-                name="bank_account"
-                value={settings.bank_account}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="562-099-8180-8643-85"
-              />
-            </div>
-          </div>
-
-          {/* Preview sekcija */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Pregled kako će izgledati na ugovoru:</h3>
-            <div className="flex justify-between items-start">
-              <div className="text-sm">
-                <div className="font-bold">{settings.company_name || 'NAZIV FIRME'}</div>
-                <div>{settings.contact_person || 'Kontakt osoba'}</div>
-                <div>{settings.address || 'Adresa firme'}</div>
-                <div>Tel: {settings.phone || '+387 XX XXX XXX'}</div>
-                <div>Email: {settings.email || 'email@firma.com'}</div>
-              </div>
-              <div className="text-sm text-right">
-                <div className="font-bold">JIB: {settings.jib || 'XXXXXXXXX'}</div>
-                <div className="font-bold">Žiro račun: {settings.bank_account || 'XXX-XXX-XXXX-XXX'}</div>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="bank_account"
+                  value={settings.bank_account}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="xxx-xxx-xxxx-xxxx-xx"
+                />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Save button */}
-          <div className="mt-6 flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Čuvanje...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Sačuvaj podešavanja
-                </>
-              )}
-            </button>
+        {/* Uslovi ugovora */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <FileText className="h-5 w-5 text-gray-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Uslovi ugovora</h2>
           </div>
-        </form>
-      </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tekst uslova koji će se prikazati u PDF ugovoru <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="terms_and_conditions"
+              value={settings.terms_and_conditions}
+              onChange={handleChange}
+              required
+              rows={15}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              placeholder="Unesite uslove ugovora koji će se prikazati u PDF dokumentu..."
+            />
+            <div className="mt-3 text-sm text-gray-500 space-y-1">
+              <p>• Ovaj tekst će biti prikazan u sekciji "Uslovi ugovora" u PDF ugovoru.</p>
+              <p>• Možete koristiti više redova za bolje formatiranje.</p>
+              <p>• Srpska slova (č, ć, š, đ, ž) će biti podržana u PDF-u.</p>
+              <p>• Preporučuje se da tekst bude kratak i jasan radi boljeg formatiranja.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dugme za čuvanje */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saveLoading}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saveLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Čuvanje...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5 mr-2" />
+                Sačuvaj podešavanja
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

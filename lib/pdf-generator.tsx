@@ -1,13 +1,28 @@
 // lib/pdf-generator.tsx
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
+
+// Registruj fontove za srpska slova
+Font.register({
+  family: 'Arial',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v27/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.ttf',
+      fontWeight: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v27/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1y4gaVc.ttf',
+      fontWeight: 'bold',
+    },
+  ]
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 11,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Arial', // Koristi Arial umjesto Helvetica
     lineHeight: 1.3,
   },
   header: {
@@ -59,7 +74,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     padding: 4,
   },
-  // Poboljšani grid layout
   infoGrid: {
     flexDirection: 'column',
   },
@@ -73,20 +87,20 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     width: '100%',
   },
-  // Bolje sizing za labele i vrednosti
+  // Optimizovani labeli za kratke datume
   labelLeft: {
-    width: 90,
+    width: 100, // Povećano sa 90 na 100
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
   },
   valueLeft: {
-    flex: 1,
+    width: 120, // Fiksna širina umjesto flex
     fontSize: 9,
-    marginRight: 15,
+    marginRight: 10,
   },
   labelRight: {
-    width: 70,
+    width: 90, // Povećano sa 70 na 90
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
@@ -95,9 +109,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 9,
   },
-  // Za punu širinu
   labelFull: {
-    width: 90,
+    width: 100,
     fontWeight: 'bold',
     fontSize: 9,
     marginRight: 5,
@@ -189,6 +202,7 @@ interface CompanySettings {
   email: string;
   jib: string;
   bank_account: string;
+  terms_and_conditions: string;
 }
 
 interface ContractData {
@@ -213,25 +227,8 @@ interface ContractData {
   driving_license_issue_date?: string;
   driving_license_valid_until?: string;
   driving_license_issued_by?: string;
-  // Dodani podaci o firmi
   company?: CompanySettings;
 }
-
-// Funkcija za čišćenje srpskih karaktera
-const cleanText = (text: string): string => {
-  if (!text) return '';
-  return text
-    .replace(/ć/g, 'c')
-    .replace(/č/g, 'c')
-    .replace(/š/g, 's')
-    .replace(/đ/g, 'd')
-    .replace(/ž/g, 'z')
-    .replace(/Ć/g, 'C')
-    .replace(/Č/g, 'C')
-    .replace(/Š/g, 'S')
-    .replace(/Đ/g, 'D')
-    .replace(/Ž/g, 'Z');
-};
 
 const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const startDate = new Date(data.start_date);
@@ -241,12 +238,22 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   // Default company data ako nije prosleđeno
   const company = data.company || {
     company_name: 'NOVERA RENT d.o.o.',
-    contact_person: 'Desanka Jandric',
-    address: 'Rade Kondica 6c, Prijedor',
+    contact_person: 'Desanka Jandrić',
+    address: 'Rade Kondića 6c, Prijedor',
     phone: '+387 66 11 77 86',
     email: 'novera.rent@gmail.com',
     jib: '4512970750008',
-    bank_account: '562-099-8180-8643-85'
+    bank_account: '562-099-8180-8643-85',
+    terms_and_conditions: 'Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.'
+  };
+
+  const formatDateSafe = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    try {
+      return format(new Date(dateString), 'dd.MM.yyyy');
+    } catch {
+      return 'N/A';
+    }
   };
 
   return (
@@ -255,17 +262,17 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         {/* Header sa dinamičkim podacima o firmi */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>{cleanText(company.company_name)}</Text>
+            <Text style={styles.companyName}>{company.company_name}</Text>
             <Text style={styles.companyDetails}>
-              {cleanText(company.contact_person)}{'\n'}
-              {cleanText(company.address)}{'\n'}
+              {company.contact_person}{'\n'}
+              {company.address}{'\n'}
               Tel: {company.phone}{'\n'}
               Email: {company.email}
             </Text>
           </View>
           <View style={styles.rightHeader}>
             <Text style={{ fontWeight: 'bold', marginBottom: 3 }}>JIB: {company.jib}</Text>
-            <Text style={{ fontWeight: 'bold' }}>Ziro racun: {company.bank_account}</Text>
+            <Text style={{ fontWeight: 'bold' }}>Žiro račun: {company.bank_account}</Text>
           </View>
         </View>
 
@@ -273,82 +280,79 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
         <Text style={styles.title}>UGOVOR O IZNAJMLJIVANJU VOZILA</Text>
         <Text style={styles.contractNumber}>Broj: {String(data.id).padStart(3, '0')}/{new Date().getFullYear()}</Text>
 
-        {/* Podaci o klijentu - poboljšan layout */}
+        {/* Podaci o korisniku - poboljšan layout */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O KORISNIKU:</Text>
           <View style={styles.infoGrid}>
             {/* Red 1: Ime i telefon */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Ime i prezime:</Text>
-              <Text style={styles.valueLeft}>{cleanText(data.client_name)}</Text>
+              <Text style={styles.valueLeft}>{data.client_name}</Text>
               <Text style={styles.labelRight}>Telefon:</Text>
               <Text style={styles.valueRight}>{data.client_phone || 'N/A'}</Text>
             </View>
             
-            {/* Red 2: broj LK i datum izdavanja */}
+            {/* Red 2: broj LK i datum izdavanja - optimizovano */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Br. lične karte:</Text>
-              <Text style={styles.valueLeft}>{data.client_id_number}</Text>
+              <Text style={styles.valueLeft}>{data.client_id_number || 'N/A'}</Text>
               <Text style={styles.labelRight}>Datum izdavanja:</Text>
-              <Text style={styles.valueRight}>{data.id_card_issue_date ? format(new Date(data.id_card_issue_date), 'dd.MM.yyyy') : 'N/A'}</Text>
+              <Text style={styles.valueRight}>{formatDateSafe(data.id_card_issue_date)}</Text>
             </View>
 
-            {/* Red 3: Validno do i izdato */}
+            {/* Red 3: Validno do i izdato od */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Vrijedi do:</Text>
-              <Text style={styles.valueRight}>{data.id_card_valid_until ? format(new Date(data.id_card_valid_until), 'dd.MM.yyyy') : 'N/A'}</Text>
-
+              <Text style={styles.valueLeft}>{formatDateSafe(data.id_card_valid_until)}</Text>
               <Text style={styles.labelRight}>Izdato od:</Text>
               <Text style={styles.valueRight}>{data.id_card_issued_by || 'N/A'}</Text>
             </View>
 
-            {/* Red 3: broj vozacke  i datum izdavanja */}
+            {/* Red 4: broj vozačke i datum izdavanja */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Br. vozačke dozvole:</Text>
-              <Text style={styles.valueLeft}>{data.driving_license_number}</Text>
+              <Text style={styles.valueLeft}>{data.driving_license_number || 'N/A'}</Text>
               <Text style={styles.labelRight}>Datum izdavanja:</Text>
-              <Text style={styles.valueRight}>{data.driving_license_issue_date ? format(new Date(data.driving_license_issue_date), 'dd.MM.yyyy') : 'N/A'}</Text>
-
+              <Text style={styles.valueRight}>{formatDateSafe(data.driving_license_issue_date)}</Text>
             </View>
 
-            {/* Red 3: Validno do i izdato */}
+            {/* Red 5: Validno do i izdato od */}
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Vrijedi do:</Text>
-              <Text style={styles.valueRight}>{data.driving_license_valid_until ? format(new Date(data.driving_license_valid_until), 'dd.MM.yyyy') : 'N/A'}</Text>
-
+              <Text style={styles.valueLeft}>{formatDateSafe(data.driving_license_valid_until)}</Text>
               <Text style={styles.labelRight}>Izdato od:</Text>
               <Text style={styles.valueRight}>{data.driving_license_issued_by || 'N/A'}</Text>
             </View>
             
-            {/* Red 3: Adresa - puna širina */}
+            {/* Red 6: Adresa - puna širina */}
             <View style={styles.infoRowFull}>
               <Text style={styles.labelFull}>Adresa:</Text>
-              <Text style={styles.valueFull}>{cleanText(data.client_address || 'N/A')}</Text>
+              <Text style={styles.valueFull}>{data.client_address || 'N/A'}</Text>
             </View>
           </View>
         </View>
 
-        {/* Podaci o vozilu - poboljšan layout */}
+        {/* Podaci o vozilu */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PODACI O VOZILU:</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoRow}>
               <Text style={styles.labelLeft}>Vozilo:</Text>
-              <Text style={styles.valueLeft}>{cleanText(data.brand)} {cleanText(data.model)} ({data.year})</Text>
+              <Text style={styles.valueLeft}>{data.brand} {data.model} ({data.year})</Text>
               <Text style={styles.labelRight}>Registracija:</Text>
               <Text style={styles.valueRight}>{data.registration_number}</Text>
             </View>
           </View>
         </View>
 
-        {/* Period iznajmljivanja - poboljšan layout */}
+        {/* Period iznajmljivanja */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PERIOD IZNAJMLJIVANJA:</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoRow}>
-              <Text style={styles.labelLeft}>Datum pocetka:</Text>
+              <Text style={styles.labelLeft}>Datum početka:</Text>
               <Text style={styles.valueLeft}>{format(startDate, 'dd.MM.yyyy')}</Text>
-              <Text style={styles.labelRight}>Datum zavrsetka:</Text>
+              <Text style={styles.labelRight}>Datum završetka:</Text>
               <Text style={styles.valueRight}>{format(endDate, 'dd.MM.yyyy')}</Text>
             </View>
             <View style={styles.infoRow}>
@@ -376,32 +380,29 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
           </View>
         </View>
 
-        {/* Uslovi ugovora */}
+        {/* Uslovi ugovora - dinamički iz baze */}
         <View style={styles.terms}>
           <Text style={styles.termsTitle}>USLOVI UGOVORA:</Text>
-          <Text>
-            Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma. {'\n\n'}
-            The renters bears full material and criminal and misdemeanor responsibility for the vehicle and undertakes to pay for the resulting damages and traffic violations during the rental period.
-          </Text>
+          <Text>{company.terms_and_conditions}</Text>
         </View>
 
         {/* Potpisi */}
         <View style={styles.signatures}>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
-            <Text style={styles.signatureLabel}>IZNAJMLJIVAC</Text>
-            <Text style={{ fontSize: 8, marginTop: 3 }}>{cleanText(company.company_name)}</Text>
+            <Text style={styles.signatureLabel}>IZNAJMLJIVAČ</Text>
+            <Text style={{ fontSize: 8, marginTop: 3 }}>{company.company_name}</Text>
           </View>
           <View style={styles.signatureBox}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>KORISNIK</Text>
-            <Text style={{ fontSize: 8, marginTop: 3 }}>{cleanText(data.client_name)}</Text>
+            <Text style={{ fontSize: 8, marginTop: 3 }}>{data.client_name}</Text>
           </View>
         </View>
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Datum: {format(new Date(), 'dd.MM.yyyy')} | Mjesto: Banja Luka, Republika Srpska
+          Datum: {format(new Date(), 'dd.MM.yyyy')} | Mjesto: {company.address}
         </Text>
       </Page>
     </Document>

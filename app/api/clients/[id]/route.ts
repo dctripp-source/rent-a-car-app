@@ -47,6 +47,7 @@ export async function GET(
   }
 }
 
+// app/api/clients/[id]/route.ts - samo UPDATE funkcija
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -87,16 +88,9 @@ export async function PUT(
     } = body;
 
     // Validate required fields
-    if (!name || !email) {
+    if (!name || !email || !driving_license_number) {
       return NextResponse.json(
-        { error: 'Name and email are required' }, 
-        { status: 400 }
-      );
-    }
-
-    if (!driving_license_number) {
-      return NextResponse.json(
-        { error: 'Driving license number is required' }, 
+        { error: 'Name, email and driving license number are required' }, 
         { status: 400 }
       );
     }

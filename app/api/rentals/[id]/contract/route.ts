@@ -4,7 +4,6 @@ import { sql } from '@/lib/db';
 import { generateContract } from '@/lib/pdf-generator';
 import { verifyToken } from '@/lib/verify-token';
 
-// IMPORTANT: Disable caching completely
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -37,7 +36,7 @@ export async function GET(
 
     console.log('User ID:', userId);
 
-    // Get rental details
+    // Get rental details sa svim podacima o klijentu
     console.log('Fetching rental data...');
     const rental = await sql`
       SELECT 
@@ -55,14 +54,13 @@ export async function GET(
         c.phone as client_phone,
         c.address as client_address, 
         c.id_number as client_id_number,
+        c.driving_license_number,
         c.id_card_issue_date,
-c.id_card_valid_until,
-c.id_card_issued_by,
-c.driving_license_number,
-c.driving_license_issue_date,
-c.driving_license_valid_until,
-c.driving_license_issued_by
-
+        c.id_card_valid_until,
+        c.id_card_issued_by,
+        c.driving_license_issue_date,
+        c.driving_license_valid_until,
+        c.driving_license_issued_by
       FROM rentals r
       JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
       JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
@@ -79,8 +77,8 @@ c.driving_license_issued_by
 
     console.log('Rental found:', rental[0].id);
 
-    // FRESH company settings query (no cache)
-    console.log('Fetching FRESH company settings...');
+    // Učitaj company settings
+    console.log('Fetching company settings...');
     const companySettings = await sql`
       SELECT * FROM company_settings 
       WHERE user_id = ${userId}
@@ -88,41 +86,34 @@ c.driving_license_issued_by
       LIMIT 1
     `;
     
-    console.log('Company settings query executed');
     console.log('Found settings count:', companySettings.length);
     
-    if (companySettings.length > 0) {
-      console.log('Found company settings:');
-      console.log('- Company name:', companySettings[0].company_name);
-      console.log('- Contact person:', companySettings[0].contact_person);
-      console.log('- Updated at:', companySettings[0].updated_at);
-    } else {
-      console.log('No company settings found for user:', userId);
-    }
-
-    // Prepare company data
+    // Pripremi company data
     let company;
     if (companySettings.length > 0) {
       console.log('Using database company settings');
+      const settings = companySettings[0];
       company = {
-        company_name: companySettings[0].company_name,
-        contact_person: companySettings[0].contact_person,
-        address: companySettings[0].address,
-        phone: companySettings[0].phone,
-        email: companySettings[0].email,
-        jib: companySettings[0].jib,
-        bank_account: companySettings[0].bank_account,
+        company_name: settings.company_name,
+        contact_person: settings.contact_person || 'Desanka Jandrić',
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        jib: settings.jib || '',
+        bank_account: settings.bank_account || '',
+        terms_and_conditions: settings.terms_and_conditions,
       };
     } else {
       console.log('Using default company settings');
       company = {
-        company_name: 'NOVERA SYSTEMS d.o.o.',
-        contact_person: 'Ime Prezime',
-        address: 'Sime Miljusa 5, Banja Luka',
-        phone: '+387 66 123 456',
-        email: 'support@noverasystems.com',
-        jib: '0000000000000',
-        bank_account: '000-000-0000-0000-00'
+        company_name: 'NOVERA RENT d.o.o.',
+        contact_person: 'Desanka Jandrić',
+        address: 'Rade Kondića 6c, Prijedor',
+        phone: '+387 66 11 77 86',
+        email: 'novera.rent@gmail.com',
+        jib: '4512970750008',
+        bank_account: '562-099-8180-8643-85',
+        terms_and_conditions: 'Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.',
       };
     }
 
@@ -130,7 +121,7 @@ c.driving_license_issued_by
     console.log('- Name:', company.company_name);
     console.log('- Person:', company.contact_person);
 
-    // Prepare contract data
+    // Pripremi contract data
     const contractData = {
       id: rental[0].id,
       start_date: rental[0].start_date,
@@ -146,14 +137,13 @@ c.driving_license_issued_by
       client_phone: rental[0].client_phone || undefined,
       client_address: rental[0].client_address || undefined,
       client_id_number: rental[0].client_id_number || undefined,
-  id_card_issue_date: rental[0].id_card_issue_date || undefined,
-  id_card_valid_until: rental[0].id_card_valid_until || undefined,
-  id_card_issued_by: rental[0].id_card_issued_by || undefined,
-  driving_license_number: rental[0].driving_license_number || undefined,
-  driving_license_issue_date: rental[0].driving_license_issue_date || undefined,
-  driving_license_valid_until: rental[0].driving_license_valid_until || undefined,
-  driving_license_issued_by: rental[0].driving_license_issued_by || undefined,
-  
+      driving_license_number: rental[0].driving_license_number || undefined,
+      id_card_issue_date: rental[0].id_card_issue_date || undefined,
+      id_card_valid_until: rental[0].id_card_valid_until || undefined,
+      id_card_issued_by: rental[0].id_card_issued_by || undefined,
+      driving_license_issue_date: rental[0].driving_license_issue_date || undefined,
+      driving_license_valid_until: rental[0].driving_license_valid_until || undefined,
+      driving_license_issued_by: rental[0].driving_license_issued_by || undefined,
       company: company,
     };
 
@@ -163,6 +153,7 @@ c.driving_license_issued_by
     const pdfBuffer = await generateContract(contractData);
 
     console.log('PDF generated successfully, size:', pdfBuffer.length);
+    console.log('=== CONTRACT GENERATION END ===');
 
     // Return PDF with cache-busting headers
     return new NextResponse(pdfBuffer, {
@@ -180,7 +171,6 @@ c.driving_license_issued_by
     console.error('=== CONTRACT GENERATION ERROR ===');
     console.error('Error:', error);
     
-    // Type-safe error handling
     const errorMessage = error instanceof Error 
       ? error.message 
       : typeof error === 'string' 

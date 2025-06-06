@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, CreditCard, Calendar, Building } from 'lucide-react';
 import { Client } from '@/types';
 import { useApi } from '@/hooks/useApi';
 
@@ -64,7 +64,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
     try {
       // Validacija obaveznih polja
-      if (!formData.driving_license_number.trim()) {
+      if (!formData.driving_license_number) {
         throw new Error('Broj vozačke dozvole je obavezan');
       }
 
@@ -100,7 +100,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
-            {client ? 'Izmjeni klijenta' : 'Dodaj novog klijenta'}
+            {client ? 'Izmijeni klijenta' : 'Dodaj novog klijenta'}
           </h2>
           <button
             onClick={onClose}
@@ -118,197 +118,200 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">
             {/* Osnovni podaci */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
-                Osnovni podaci
-              </h3>
-            </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Ime i prezime <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Petar Petrović"
-              />
-            </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Osnovni podaci</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Ime i prezime <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Petar Petrović"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="email@example.com"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="email@example.com"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Telefon
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+387 65 123 456"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Telefon
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="+387 65 123 456"
+                  />
+                </div>
 
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700">
-                Adresa
-              </label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows={3}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ulica i broj, Grad, Poštanski broj"
-              />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Adresa
+                  </label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    rows={2}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Ulica i broj, Grad, Poštanski broj"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Lična karta */}
-            <div className="md:col-span-2 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
-                Podaci o ličnoj karti
-              </h3>
-            </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Broj lične karte
-              </label>
-              <input
-                type="text"
-                name="id_number"
-                value={formData.id_number}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="123456789"
-              />
-            </div>
+              <div className="flex items-center mb-4">
+                <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Lična karta</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Broj lične karte
+                  </label>
+                  <input
+                    type="text"
+                    name="id_number"
+                    value={formData.id_number}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="123456789"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Datum izdavanja lične karte
-              </label>
-              <input
-                type="date"
-                name="id_card_issue_date"
-                value={formData.id_card_issue_date}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Izdato od
+                  </label>
+                  <input
+                    type="text"
+                    name="id_card_issued_by"
+                    value={formData.id_card_issued_by}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="MUP RS Banja Luka"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Lična karta vrijedi do
-              </label>
-              <input
-                type="date"
-                name="id_card_valid_until"
-                value={formData.id_card_valid_until}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Datum izdavanja
+                  </label>
+                  <input
+                    type="date"
+                    name="id_card_issue_date"
+                    value={formData.id_card_issue_date}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Lična karta izdata od
-              </label>
-              <input
-                type="text"
-                name="id_card_issued_by"
-                value={formData.id_card_issued_by}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="MUP RS Banja Luka"
-              />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Vrijedi do
+                  </label>
+                  <input
+                    type="date"
+                    name="id_card_valid_until"
+                    value={formData.id_card_valid_until}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Vozačka dozvola */}
-            <div className="md:col-span-2 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
-                Podaci o vozačkoj dozvoli
-              </h3>
-            </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Broj vozačke dozvole <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="driving_license_number"
-                value={formData.driving_license_number}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="12345678"
-              />
-            </div>
+              <div className="flex items-center mb-4">
+                <Calendar className="h-5 w-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Vozačka dozvola</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Broj vozačke dozvole <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="driving_license_number"
+                    value={formData.driving_license_number}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="40M7894562"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Datum izdavanja vozačke dozvole
-              </label>
-              <input
-                type="date"
-                name="driving_license_issue_date"
-                value={formData.driving_license_issue_date}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Izdato od
+                  </label>
+                  <input
+                    type="text"
+                    name="driving_license_issued_by"
+                    value={formData.driving_license_issued_by}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="MUP RS Banja Luka"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Vozačka dozvola vrijedi do
-              </label>
-              <input
-                type="date"
-                name="driving_license_valid_until"
-                value={formData.driving_license_valid_until}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Datum izdavanja
+                  </label>
+                  <input
+                    type="date"
+                    name="driving_license_issue_date"
+                    value={formData.driving_license_issue_date}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Vozačka dozvola izdata od
-              </label>
-              <input
-                type="text"
-                name="driving_license_issued_by"
-                value={formData.driving_license_issued_by}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="MUP RS Banja Luka"
-              />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Vrijedi do
+                  </label>
+                  <input
+                    type="date"
+                    name="driving_license_valid_until"
+                    value={formData.driving_license_valid_until}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="mt-8 flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
@@ -328,7 +331,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                   Čuvanje...
                 </>
               ) : (
-                client ? 'Izmjeni' : 'Dodaj'
+                client ? 'Izmijeni' : 'Dodaj'
               )}
             </button>
           </div>
