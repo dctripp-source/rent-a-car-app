@@ -87,10 +87,24 @@ export async function PUT(
       driving_license_issued_by
     } = body;
 
-    // Validate required fields
-    if (!name || !email || !driving_license_number) {
+    // Validate required fields - ažurirane validacije
+    if (!name?.trim()) {
       return NextResponse.json(
-        { error: 'Name, email and driving license number are required' }, 
+        { error: 'Name is required' }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!id_number?.trim()) {
+      return NextResponse.json(
+        { error: 'ID number is required' }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!driving_license_number?.trim()) {
+      return NextResponse.json(
+        { error: 'Driving license number is required' }, 
         { status: 400 }
       );
     }
@@ -108,17 +122,17 @@ export async function PUT(
       );
     }
 
-    // Check if email is being changed and already exists
-    const emailCheck = await sql`
+    // Check if ID number is being changed and already exists
+    const idCheck = await sql`
       SELECT id FROM clients 
-      WHERE email = ${email} 
+      WHERE id_number = ${id_number} 
         AND user_id = ${userId} 
         AND id != ${id}
     `;
 
-    if (emailCheck.length > 0) {
+    if (idCheck.length > 0) {
       return NextResponse.json(
-        { error: 'Another client with this email already exists' }, 
+        { error: 'Another client with this ID number already exists' }, 
         { status: 409 }
       );
     }

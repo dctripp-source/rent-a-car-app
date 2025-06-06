@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// app/api/clients/route.ts - POST funkcija
 export async function POST(request: NextRequest) {
   try {
     const userId = await verifyToken(request);
@@ -57,30 +58,37 @@ export async function POST(request: NextRequest) {
       driving_license_issued_by
     } = body;
 
-    // Validate required fields
-    if (!name || !email) {
+    // Validate required fields - ažurirane validacije
+    if (!name?.trim()) {
       return NextResponse.json(
-        { error: 'Name and email are required' }, 
+        { error: 'Name is required' }, 
         { status: 400 }
       );
     }
-
-    if (!driving_license_number) {
+    
+    if (!id_number?.trim()) {
+      return NextResponse.json(
+        { error: 'ID number is required' }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!driving_license_number?.trim()) {
       return NextResponse.json(
         { error: 'Driving license number is required' }, 
         { status: 400 }
       );
     }
 
-    // Check if client with this email already exists for this user
+    // Check if client with this ID number already exists for this user (umjesto email)
     const existingClient = await sql`
       SELECT id FROM clients 
-      WHERE email = ${email} AND user_id = ${userId}
+      WHERE id_number = ${id_number} AND user_id = ${userId}
     `;
 
     if (existingClient.length > 0) {
       return NextResponse.json(
-        { error: 'Client with this email already exists' }, 
+        { error: 'Client with this ID number already exists' }, 
         { status: 409 }
       );
     }
