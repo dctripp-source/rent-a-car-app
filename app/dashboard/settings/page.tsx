@@ -300,7 +300,6 @@ Korisnik se obavezuje da neće koristiti vozilo za prevoz opasnih materija, za t
             <div className="mt-3 text-sm text-gray-500 space-y-1">
               <p>• Ovaj tekst će biti prikazan u sekciji "Uslovi ugovora" u PDF ugovoru.</p>
               <p>• Možete koristiti više redova za bolje formatiranje.</p>
-              <p>• Srpska slova (č, ć, š, đ, ž) će biti podržana u PDF-u.</p>
               <p>• Preporučuje se da tekst bude kratak i jasan radi boljeg formatiranja.</p>
             </div>
           </div>
