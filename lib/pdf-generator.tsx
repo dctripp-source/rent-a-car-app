@@ -235,13 +235,13 @@ const ContractDocument: React.FC<{ data: ContractData }> = ({ data }) => {
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const company = data.company || {
-    company_name: 'NOVERA RENT d.o.o.',
-    contact_person: 'Desanka Jandrić',
-    address: 'Rade Kondića 6c, Prijedor',
-    phone: '+387 66 11 77 86',
-    email: 'novera.rent@gmail.com',
-    jib: '4512970750008',
-    bank_account: '562-099-8180-8643-85',
+    company_name: 'Naziv kompanije',
+    contact_person: 'Ime Prezime',
+    address: 'Ulica, Grad',
+    phone: '+387 66 123 456',
+    email: 'email@email.com',
+    jib: '0000000000000',
+    bank_account: '000-000-0000-0000-00',
     terms_and_conditions: 'Korisnik snosi punu materijalnu, krivičnu i prekršajnu odgovornost nad vozilom, te se obavezuje platiti nastala oštećenja i saobraćajne prekršaje u periodu trajanja najma.',
   };
 
