@@ -8,11 +8,11 @@ Font.register({
   family: 'DejaVuSans',
   fonts: [
     {
-      src: 'public/fonts/DejaVuSans.ttf', // Stavi font u public/fonts/
+      src: 'https://raw.githubusercontent.com/dctripp-source/novera-fonts/main/DejaVuSans.ttf',
       fontWeight: 'normal',
     },
     {
-      src: 'public/fonts/DejaVuSans-Bold.ttf', // Stavi font u public/fonts/
+      src: 'https://raw.githubusercontent.com/dctripp-source/novera-fonts/main/DejaVuSans-Bold.ttf',
       fontWeight: 'bold',
     },
   ]
