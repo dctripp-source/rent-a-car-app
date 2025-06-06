@@ -54,7 +54,15 @@ export async function GET(
         c.email as client_email, 
         c.phone as client_phone,
         c.address as client_address, 
-        c.id_number as client_id_number
+        c.id_number as client_id_number,
+        c.id_card_issue_date,
+c.id_card_valid_until,
+c.id_card_issued_by,
+c.driving_license_number,
+c.driving_license_issue_date,
+c.driving_license_valid_until,
+c.driving_license_issued_by
+
       FROM rentals r
       JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
       JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
@@ -108,13 +116,13 @@ export async function GET(
     } else {
       console.log('Using default company settings');
       company = {
-        company_name: 'NOVERA RENT d.o.o.',
-        contact_person: 'Desanka Jandric',
-        address: 'Rade Kondica 6c, Prijedor',
-        phone: '+387 66 11 77 86',
-        email: 'novera.rent@gmail.com',
-        jib: '4512970750008',
-        bank_account: '562-099-8180-8643-85'
+        company_name: 'NOVERA SYSTEMS d.o.o.',
+        contact_person: 'Ime Prezime',
+        address: 'Sime Miljusa 5, Banja Luka',
+        phone: '+387 66 123 456',
+        email: 'support@noverasystems.com',
+        jib: '0000000000000',
+        bank_account: '000-000-0000-0000-00'
       };
     }
 
@@ -138,6 +146,14 @@ export async function GET(
       client_phone: rental[0].client_phone || undefined,
       client_address: rental[0].client_address || undefined,
       client_id_number: rental[0].client_id_number || undefined,
+  id_card_issue_date: rental[0].id_card_issue_date || undefined,
+  id_card_valid_until: rental[0].id_card_valid_until || undefined,
+  id_card_issued_by: rental[0].id_card_issued_by || undefined,
+  driving_license_number: rental[0].driving_license_number || undefined,
+  driving_license_issue_date: rental[0].driving_license_issue_date || undefined,
+  driving_license_valid_until: rental[0].driving_license_valid_until || undefined,
+  driving_license_issued_by: rental[0].driving_license_issued_by || undefined,
+  
       company: company,
     };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Upload, Car as CarIcon, Calendar, MapPin, DollarSign, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Car as CarIcon, Calendar, MapPin, DollarSign, Filter, Fuel, Settings, Users } from 'lucide-react';
 import { Vehicle } from '@/types';
 import VehicleModal from '@/components/VehicleModal';
 import { useApi } from '@/hooks/useApi';
@@ -98,6 +98,24 @@ export default function VehiclesPage() {
       case 'rented': return 'Iznajmljeno';
       case 'maintenance': return 'Servis';
       default: return status;
+    }
+  };
+
+  const getFuelTypeLabel = (fuelType: string) => {
+    switch (fuelType) {
+      case 'gasoline': return 'Benzin';
+      case 'diesel': return 'Dizel';
+      case 'hybrid': return 'Hibrid';
+      case 'electric': return 'Električni';
+      default: return fuelType;
+    }
+  };
+
+  const getTransmissionLabel = (transmission: string) => {
+    switch (transmission) {
+      case 'manual': return 'Manuelni';
+      case 'automatic': return 'Automatik';
+      default: return transmission;
     }
   };
 
@@ -236,6 +254,24 @@ export default function VehiclesPage() {
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-2" />
                     <span className="font-semibold text-gray-900">{vehicle.daily_rate} KM/dan</span>
+                  </div>
+
+                  {/* Novi detalji */}
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <div className="flex items-center">
+                      <Fuel className="h-4 w-4 mr-2" />
+                      <span>{getFuelTypeLabel(vehicle.fuel_type || 'benzin')}</span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <Settings className="h-4 w-4 mr-2" />
+                      <span>{getTransmissionLabel(vehicle.transmission || 'manuelni')}</span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      <span>{vehicle.seat_count || 5} sjedišta</span>
+                    </div>
                   </div>
                 </div>
 
