@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CreditCard, Calendar, Building } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, CreditCard, Car } from 'lucide-react';
 import { Client } from '@/types';
 import { useApi } from '@/hooks/useApi';
 
@@ -19,7 +19,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
     phone: '',
     address: '',
     id_number: '',
-    jmbg: '', // NOVO POLJE
+    jmbg: '',
     driving_license_number: '',
     id_card_issue_date: '',
     id_card_valid_until: '',
@@ -33,13 +33,14 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
   useEffect(() => {
     if (client) {
+      console.log('Loading client data:', client); // Debug log
       setFormData({
         name: client.name || '',
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
         id_number: client.id_number || '',
-        jmbg: client.jmbg || '', // NOVO POLJE
+        jmbg: client.jmbg || '',
         driving_license_number: client.driving_license_number || '',
         id_card_issue_date: client.id_card_issue_date || '',
         id_card_valid_until: client.id_card_valid_until || '',
@@ -65,11 +66,8 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
     setLoading(true);
 
     try {
-      // Validacija obaveznih polja - samo ime i prezime
-      if (!formData.name.trim()) {
-        throw new Error('Ime i prezime su obavezni');
-      }
-
+      console.log('Submitting form data:', formData); // Debug log
+      
       const url = client 
         ? `/api/clients/${client.id}`
         : '/api/clients';
@@ -88,6 +86,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
         throw new Error(data.error || 'Greška pri čuvanju klijenta');
       }
 
+      console.log('Response data:', data); // Debug log
       onClose();
     } catch (error: any) {
       console.error('Error saving client:', error);
@@ -100,9 +99,9 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {client ? 'Izmijeni klijenta' : 'Dodaj novog klijenta'}
+            {client ? 'Izmjeni klijenta' : 'Dodaj novog klijenta'}
           </h2>
           <button
             onClick={onClose}
@@ -122,8 +121,12 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
           <div className="space-y-6">
             {/* Osnovni podaci */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Osnovni podaci</h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center mb-4">
+                <User className="h-5 w-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Osnovni podaci</h3>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">
@@ -142,6 +145,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
+                    <Mail className="inline h-4 w-4 mr-1" />
                     Email
                   </label>
                   <input
@@ -156,6 +160,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
+                    <Phone className="inline h-4 w-4 mr-1" />
                     Telefon
                   </label>
                   <input
@@ -170,6 +175,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">
+                    <MapPin className="inline h-4 w-4 mr-1" />
                     Adresa
                   </label>
                   <textarea
@@ -185,11 +191,12 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
             </div>
 
             {/* Lična karta */}
-            <div>
+            <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center mb-4">
                 <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
-                <h3 className="text-lg font-medium text-gray-900">Lična karta</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Lična karta</h3>
               </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
@@ -214,29 +221,15 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                     name="jmbg"
                     value={formData.jmbg}
                     onChange={handleChange}
-                    maxLength={13}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="1234567890123"
+                    maxLength={13}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Izdato od
-                  </label>
-                  <input
-                    type="text"
-                    name="id_card_issued_by"
-                    value={formData.id_card_issued_by}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="MUP RS Banja Luka"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Datum izdavanja
+                    Datum izdavanja LK
                   </label>
                   <input
                     type="date"
@@ -259,15 +252,30 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Izdata od
+                  </label>
+                  <input
+                    type="text"
+                    name="id_card_issued_by"
+                    value={formData.id_card_issued_by}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="MUP RS Prijedor"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Vozačka dozvola */}
-            <div>
+            <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center mb-4">
-                <Calendar className="h-5 w-5 text-gray-600 mr-2" />
-                <h3 className="text-lg font-medium text-gray-900">Vozačka dozvola</h3>
+                <Car className="h-5 w-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Vozačka dozvola</h3>
               </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
@@ -279,27 +287,13 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                     value={formData.driving_license_number}
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="40M7894562"
+                    placeholder="123456789"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Izdato od
-                  </label>
-                  <input
-                    type="text"
-                    name="driving_license_issued_by"
-                    value={formData.driving_license_issued_by}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="MUP RS Banja Luka"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Datum izdavanja
+                    Datum izdavanja VD
                   </label>
                   <input
                     type="date"
@@ -322,11 +316,25 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Izdata od
+                  </label>
+                  <input
+                    type="text"
+                    name="driving_license_issued_by"
+                    value={formData.driving_license_issued_by}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="MUP RS Prijedor"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end space-x-3">
+          <div className="mt-6 flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
@@ -346,7 +354,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                   Čuvanje...
                 </>
               ) : (
-                client ? 'Izmijeni' : 'Dodaj'
+                client ? 'Izmjeni' : 'Dodaj'
               )}
             </button>
           </div>

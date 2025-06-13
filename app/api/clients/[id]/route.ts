@@ -47,7 +47,6 @@ export async function GET(
   }
 }
 
-// app/api/clients/[id]/route.ts - samo UPDATE funkcija
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -109,22 +108,55 @@ export async function PUT(
       );
     }
 
-    // Uklanjamo provjeru duplikata jer nema obaveznih unique polja
+    // Provjeri duplikate za broj lične karte (osim trenutnog klijenta)
+    if (id_number && id_number.trim()) {
+      const existingClient = await sql`
+        SELECT id, name FROM clients 
+        WHERE id_number = ${id_number.trim()} 
+          AND user_id = ${userId} 
+          AND id != ${id}
+      `;
+
+      if (existingClient.length > 0) {
+        return NextResponse.json(
+          { error: `Drugi klijent sa brojem lične karte ${id_number} već postoji: ${existingClient[0].name}` }, 
+          { status: 409 }
+        );
+      }
+    }
+
+    // Provjeri duplikate za email (osim trenutnog klijenta)
+    if (email && email.trim()) {
+      const existingClient = await sql`
+        SELECT id, name FROM clients 
+        WHERE email = ${email.trim()} 
+          AND user_id = ${userId} 
+          AND id != ${id}
+      `;
+
+      if (existingClient.length > 0) {
+        return NextResponse.json(
+          { error: `Drugi klijent sa email adresom ${email} već postoji: ${existingClient[0].name}` }, 
+          { status: 409 }
+        );
+      }
+    }
 
     const result = await sql`
       UPDATE clients 
       SET name = ${name}, 
-          email = ${email || ''}, 
-          phone = ${phone || ''}, 
-          address = ${address || ''}, 
-          id_number = ${id_number || ''},
-          driving_license_number = ${driving_license_number || ''},
+          email = ${email || null}, 
+          phone = ${phone || null}, 
+          address = ${address || null}, 
+          id_number = ${id_number || null},
+          jmbg = ${jmbg || null},
+          driving_license_number = ${driving_license_number || null},
           id_card_issue_date = ${id_card_issue_date || null},
           id_card_valid_until = ${id_card_valid_until || null},
-          id_card_issued_by = ${id_card_issued_by || ''},
+          id_card_issued_by = ${id_card_issued_by || null},
           driving_license_issue_date = ${driving_license_issue_date || null},
           driving_license_valid_until = ${driving_license_valid_until || null},
-          driving_license_issued_by = ${driving_license_issued_by || ''}
+          driving_license_issued_by = ${driving_license_issued_by || null}
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;
