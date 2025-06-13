@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       phone, 
       address, 
       id_number,
+      jmbg,
       driving_license_number,
       id_card_issue_date,
       id_card_valid_until,
@@ -66,13 +67,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Uklanjamo provjeru duplikata jer nema obaveznih unique polja
-    // Sada možemo imati klijente bez email-a ili ID broj-a
+    // Provjeri da li postoji klijent sa istim imenom I istim brojem lične karte (ako je unešen)
+    if (id_number && id_number.trim()) {
+      const existingClient = await sql`
+        SELECT id, name FROM clients 
+        WHERE id_number = ${id_number.trim()} AND user_id = ${userId}
+      `;
+
+      if (existingClient.length > 0) {
+        return NextResponse.json(
+          { error: `Klijent sa brojem lične karte ${id_number} već postoji: ${existingClient[0].name}` }, 
+          { status: 409 }
+        );
+      }
+    }
+
+    // Ili provjeri email ako je unešen
+    if (email && email.trim()) {
+      const existingClient = await sql`
+        SELECT id, name FROM clients 
+        WHERE email = ${email.trim()} AND user_id = ${userId}
+      `;
+
+      if (existingClient.length > 0) {
+        return NextResponse.json(
+          { error: `Klijent sa email adresom ${email} već postoji: ${existingClient[0].name}` }, 
+          { status: 409 }
+        );
+      }
+    }
 
     const result = await sql`
       INSERT INTO clients (
         firebase_uid, name, email, phone, 
-        address, id_number, driving_license_number,
+        address, id_number, jmbg, driving_license_number,
         id_card_issue_date, id_card_valid_until, id_card_issued_by,
         driving_license_issue_date, driving_license_valid_until, driving_license_issued_by,
         user_id
@@ -80,7 +108,7 @@ export async function POST(request: NextRequest) {
       VALUES (
         ${firebase_uid || userId}, ${name}, ${email || null}, 
         ${phone || null}, ${address || null}, 
-        ${id_number || null}, ${driving_license_number || null},
+        ${id_number || null}, ${jmbg || null}, ${driving_license_number || null},
         ${id_card_issue_date || null}, ${id_card_valid_until || null}, ${id_card_issued_by || null},
         ${driving_license_issue_date || null}, ${driving_license_valid_until || null}, ${driving_license_issued_by || null},
         ${userId}

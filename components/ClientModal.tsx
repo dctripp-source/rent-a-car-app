@@ -19,6 +19,7 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
     phone: '',
     address: '',
     id_number: '',
+    jmbg: '', // NOVO POLJE
     driving_license_number: '',
     id_card_issue_date: '',
     id_card_valid_until: '',
@@ -33,11 +34,12 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
   useEffect(() => {
     if (client) {
       setFormData({
-        name: client.name,
+        name: client.name || '',
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
         id_number: client.id_number || '',
+        jmbg: client.jmbg || '', // NOVO POLJE
         driving_license_number: client.driving_license_number || '',
         id_card_issue_date: client.id_card_issue_date || '',
         id_card_valid_until: client.id_card_valid_until || '',
@@ -200,6 +202,21 @@ export default function ClientModal({ client, onClose }: ClientModalProps) {
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="123456789"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    JMBG
+                  </label>
+                  <input
+                    type="text"
+                    name="jmbg"
+                    value={formData.jmbg}
+                    onChange={handleChange}
+                    maxLength={13}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="1234567890123"
                   />
                 </div>
 

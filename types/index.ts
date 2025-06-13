@@ -23,6 +23,7 @@ export interface Client {
   phone?: string;
   address?: string;
   id_number?: string; // opciono
+  jmbg?: string; // opciono - novo polje
   driving_license_number?: string; // opciono - više nije obavezno
   id_card_issue_date?: string;
   id_card_valid_until?: string;

@@ -78,6 +78,7 @@ export async function PUT(
       phone, 
       address, 
       id_number,
+      jmbg,
       driving_license_number,
       id_card_issue_date,
       id_card_valid_until,
