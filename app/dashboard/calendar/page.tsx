@@ -1,4 +1,9 @@
 // app/dashboard/calendar/page.tsx - NOVA VERZIJA SA PRETRAGOM I REZERVACIJAMA
+const parseLocalDate = (dateString: string): Date => {
+  const date = new Date(dateString + 'T00:00:00');
+  return date;
+};
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -12,10 +17,7 @@ import ReservationModal from '@/components/ReservationModal';
 import { Plus, Calendar as CalendarIcon, Search, Filter, Clock, X } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
-const parseLocalDate = (dateString: string): Date => {
-  const date = new Date(dateString + 'T00:00:00');
-  return date;
-};
+
 
 const localizer = momentLocalizer(moment);
 
@@ -82,12 +84,14 @@ export default function CalendarPage() {
 
       // Convert rentals to calendar events
       const calendarEvents: CalendarEvent[] = rentalsData.map((rental: Rental) => ({
-        id: rental.id.toString(),
-        title: `${rental.vehicle?.brand} ${rental.vehicle?.model} - ${rental.client?.name}`,
-        start: parseLocalDate(rental.start_date),
-        end: parseLocalDate(rental.end_date),
-        resource: { rental },
-      }));
+  id: rental.id.toString(),
+  title: `${rental.vehicle?.brand} ${rental.vehicle?.model} - ${rental.client?.name}`,
+  start: parseLocalDate(rental.start_date), // Koristite parseLocalDate umjesto new Date
+  end: parseLocalDate(rental.end_date),     // Koristite parseLocalDate umjesto new Date
+  resource: { rental },
+}));
+
+      
 
       setAllEvents(calendarEvents);
       setEvents(calendarEvents);
