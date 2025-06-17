@@ -7,6 +7,7 @@ import { Vehicle } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { ImageOptimizer } from '@/lib/image-optimizer';
 
+
 interface VehicleModalProps {
   vehicle: Vehicle | null;
   onClose: () => void;
@@ -345,6 +346,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                   <option value="available">Dostupno</option>
                   <option value="rented">Iznajmljeno</option>
                   <option value="maintenance">Održavanje</option>
+                  <option value="broken">Pokvareno</option>
                 </select>
               </div>
             </div>

@@ -12,6 +12,11 @@ import ReservationModal from '@/components/ReservationModal';
 import { Plus, Calendar as CalendarIcon, Search, Filter, Clock, X } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 
+const parseLocalDate = (dateString: string): Date => {
+  const date = new Date(dateString + 'T00:00:00');
+  return date;
+};
+
 const localizer = momentLocalizer(moment);
 
 // Configure moment for Serbian locale
@@ -22,6 +27,7 @@ moment.locale('sr', {
   weekdaysShort: 'Ned_Pon_Uto_Sri_Čet_Pet_Sub'.split('_'),
   weekdaysMin: 'Ne_Po_Ut_Sr_Če_Pe_Su'.split('_'),
 });
+
 
 export default function CalendarPage() {
   const { fetchWithAuth } = useApi();
@@ -78,8 +84,8 @@ export default function CalendarPage() {
       const calendarEvents: CalendarEvent[] = rentalsData.map((rental: Rental) => ({
         id: rental.id.toString(),
         title: `${rental.vehicle?.brand} ${rental.vehicle?.model} - ${rental.client?.name}`,
-        start: new Date(rental.start_date),
-        end: new Date(rental.end_date),
+        start: parseLocalDate(rental.start_date),
+        end: parseLocalDate(rental.end_date),
         resource: { rental },
       }));
 

@@ -1,4 +1,4 @@
-// app/api/rentals/route.ts - Ažurirana verzija
+// app/api/rentals/route.ts - Ažurirana sa napomenama
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/verify-token';
@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all rentals including reservations
     const rentals = await sql`
       SELECT 
         r.*,
@@ -24,15 +23,7 @@ export async function GET(request: NextRequest) {
       JOIN vehicles v ON r.vehicle_id = v.id AND v.user_id = ${userId}
       JOIN clients c ON r.client_id = c.id AND c.user_id = ${userId}
       WHERE r.user_id = ${userId}
-      ORDER BY 
-        CASE 
-          WHEN r.status = 'reserved' THEN 1
-          WHEN r.status = 'active' THEN 2
-          WHEN r.status = 'completed' THEN 3
-          WHEN r.status = 'cancelled' THEN 4
-          ELSE 5
-        END,
-        r.start_date DESC
+      ORDER BY r.created_at DESC
     `;
 
     // Transform the flat data into nested structure
@@ -42,11 +33,9 @@ export async function GET(request: NextRequest) {
       client_id: rental.client_id,
       start_date: rental.start_date,
       end_date: rental.end_date,
-      start_datetime: rental.start_datetime,
-      end_datetime: rental.end_datetime,
       total_price: parseFloat(rental.total_price),
       status: rental.status,
-      notes: rental.notes,
+      notes: rental.notes, // Dodano polje za napomene
       created_at: rental.created_at,
       updated_at: rental.updated_at,
       vehicle: {
@@ -87,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { vehicle_id, client_id, start_date, end_date, total_price } = body;
+    const { vehicle_id, client_id, start_date, end_date, total_price, notes } = body;
 
     // Validate required fields
     if (!vehicle_id || !client_id || !start_date || !end_date || !total_price) {
@@ -141,12 +130,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for overlapping rentals (including reservations)
+    // Check for overlapping rentals
     const overlapCheck = await sql`
       SELECT id FROM rentals 
       WHERE vehicle_id = ${vehicle_id} 
         AND user_id = ${userId}
-        AND status IN ('active', 'reserved')
+        AND status = 'active'
         AND (
           (start_date <= ${end_date} AND end_date >= ${start_date})
         )
@@ -154,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     if (overlapCheck.length > 0) {
       return NextResponse.json(
-        { error: 'Vehicle is already rented or reserved for this period' }, 
+        { error: 'Vehicle is already rented for this period' }, 
         { status: 409 }
       );
     }
@@ -172,11 +161,11 @@ export async function POST(request: NextRequest) {
       const result = await sql`
         INSERT INTO rentals (
           vehicle_id, client_id, start_date, end_date, 
-          total_price, status, user_id
+          total_price, status, notes, user_id
         )
         VALUES (
           ${vehicle_id}, ${client_id}, ${start_date}, 
-          ${end_date}, ${total_price}, 'active', ${userId}
+          ${end_date}, ${total_price}, 'active', ${notes || null}, ${userId}
         )
         RETURNING *
       `;

@@ -6,7 +6,7 @@ import { Vehicle } from '@/types';
 import VehicleModal from '@/components/VehicleModal';
 import { useApi } from '@/hooks/useApi';
 
-type VehicleStatus = 'all' | 'available' | 'rented' | 'maintenance';
+type VehicleStatus = 'all' | 'available' | 'rented' | 'maintenance' | 'broken';
 
 export default function VehiclesPage() {
   const { fetchWithAuth } = useApi();
@@ -93,13 +93,14 @@ export default function VehiclesPage() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'available': return 'Dostupno';
-      case 'rented': return 'Iznajmljeno';
-      case 'maintenance': return 'Servis';
-      default: return status;
-    }
-  };
+  switch (status) {
+    case 'available': return 'Dostupno';
+    case 'rented': return 'Iznajmljeno';
+    case 'maintenance': return 'Servis';
+    case 'broken': return 'Pokvareno';
+    default: return status;
+  }
+};
 
   const getFuelTypeLabel = (fuelType: string) => {
     switch (fuelType) {
@@ -165,23 +166,24 @@ export default function VehiclesPage() {
       <div className="mb-6 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { key: 'all', label: 'Sva vozila' },
-            { key: 'available', label: 'Dostupna' },
-            { key: 'rented', label: 'Iznajmljena' },
-            { key: 'maintenance', label: 'Servis' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setStatusFilter(tab.key as VehicleStatus)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                statusFilter === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label} ({getStatusCount(tab.key as VehicleStatus)})
-            </button>
-          ))}
+  { key: 'all', label: 'Sva vozila' },
+  { key: 'available', label: 'Dostupna' },
+  { key: 'rented', label: 'Iznajmljena' },
+  { key: 'maintenance', label: 'Servis' },
+  { key: 'broken', label: 'Pokvarena' }
+].map((tab) => (
+  <button
+    key={tab.key}
+    onClick={() => setStatusFilter(tab.key as VehicleStatus)}
+    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+      statusFilter === tab.key
+        ? 'border-blue-500 text-blue-600'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+    }`}
+  >
+    {tab.label} ({getStatusCount(tab.key as VehicleStatus)})
+  </button>
+))}
         </nav>
       </div>
 
@@ -223,14 +225,16 @@ export default function VehiclesPage() {
                 {/* Status badge */}
                 <div className="absolute top-2 right-2">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    vehicle.status === 'available' 
-                      ? 'bg-green-100 text-green-800'
-                      : vehicle.status === 'rented'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {getStatusLabel(vehicle.status)}
-                  </span>
+  vehicle.status === 'available' 
+    ? 'bg-green-100 text-green-800'
+    : vehicle.status === 'rented'
+    ? 'bg-yellow-100 text-yellow-800'
+    : vehicle.status === 'broken'
+    ? 'bg-red-100 text-red-800'
+    : 'bg-gray-100 text-gray-800'
+}`}>
+  {getStatusLabel(vehicle.status)}
+</span>
                 </div>
               </div>
 
