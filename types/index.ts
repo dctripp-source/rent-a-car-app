@@ -1,4 +1,4 @@
-// types/index.ts
+// types/index.ts - Ažurirani tipovi
 export interface Vehicle {
   id: number;
   brand: string;
@@ -6,11 +6,12 @@ export interface Vehicle {
   year: number;
   registration_number: string;
   daily_rate: number;
-  status: 'available' | 'rented' | 'maintenance' | 'reserved';
-  fuel_type?: string;
-  transmission?: string;
+  status: 'available' | 'rented' | 'maintenance' | 'broken'; // Dodano 'broken'
+  fuel_type?: 'gasoline' | 'diesel' | 'hybrid' | 'electric';
+  transmission?: 'manual' | 'automatic';
   seat_count?: number;
   image_url?: string;
+  user_id?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -19,7 +20,7 @@ export interface Client {
   id: number;
   firebase_uid?: string;
   name: string; // OBAVEZNO - jedino obavezno polje
-  email?: string; // opciono
+  email?: string; // opciono - promjena sa obaveznog na opciono
   phone?: string;
   address?: string;
   id_number?: string; // opciono
@@ -31,6 +32,7 @@ export interface Client {
   driving_license_issue_date?: string;
   driving_license_valid_until?: string;
   driving_license_issued_by?: string;
+  user_id?: string;
   created_at?: Date;
 }
 
@@ -40,8 +42,10 @@ export interface Rental {
   client_id: number;
   start_date: string;
   end_date: string;
-  total_price: number;
-  status: 'active' | 'completed' | 'cancelled' | 'reserved';
+  total_price: number | string;
+  status: 'active' | 'completed' | 'cancelled' | 'reserved'; // Zadržan 'reserved' status
+  notes?: string; // Dodano polje za napomene
+  user_id?: string;
   created_at?: Date;
   updated_at?: Date;
   vehicle?: Vehicle;
