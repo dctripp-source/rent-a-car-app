@@ -1,10 +1,10 @@
 // app/dashboard/calendar/page.tsx - NOVA VERZIJA SA PRETRAGOM I REZERVACIJAMA
+'use client';
+
 const parseLocalDate = (dateString: string): Date => {
   const date = new Date(dateString + 'T00:00:00');
   return date;
 };
-
-'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
