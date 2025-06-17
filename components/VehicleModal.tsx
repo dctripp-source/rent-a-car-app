@@ -169,9 +169,10 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         // Kreiraj preview
         const reader = new FileReader();
         reader.onload = (event) => {
-          // @ts-ignore
-          const result = (event.target as FileReader).result as string;
-          setImagePreview(result);
+          const result = event.target?.result;
+          if (typeof result === 'string') {
+            setImagePreview(result);
+          }
         };
         reader.readAsDataURL(finalFile);
         
@@ -182,9 +183,10 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         setImageFile(file);
         const reader = new FileReader();
         reader.onload = (event) => {
-          // @ts-ignore
-          const result = (event.target as FileReader).result as string;
-          setImagePreview(result);
+          const result = event.target?.result;
+          if (typeof result === 'string') {
+            setImagePreview(result);
+          }
         };
         reader.readAsDataURL(file);
       } finally {
@@ -211,7 +213,9 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
     try {
       const formDataToSend = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value.toString());
+        if (value !== undefined && value !== null) {
+          formDataToSend.append(key, value.toString());
+        }
       });
 
       if (imageFile) {
