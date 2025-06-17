@@ -169,6 +169,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         // Kreiraj preview
         const reader = new FileReader();
         reader.onload = (event) => {
+          // @ts-ignore
           const result = (event.target as FileReader).result as string;
           setImagePreview(result);
         };
@@ -181,6 +182,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         setImageFile(file);
         const reader = new FileReader();
         reader.onload = (event) => {
+          // @ts-ignore
           const result = (event.target as FileReader).result as string;
           setImagePreview(result);
         };
