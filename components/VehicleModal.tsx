@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import { X, Upload, ImageIcon, Loader2 } from 'lucide-react';
 import { Vehicle } from '@/types';
 import { useApi } from '@/hooks/useApi';
-import { ImageOptimizer } from '@/lib/image-optimizer';
-
 
 interface VehicleModalProps {
   vehicle: Vehicle | null;
@@ -22,8 +20,8 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
     registration_number: '',
     daily_rate: 0,
     status: 'available' as Vehicle['status'],
-    fuel_type: 'gasoline' as 'gasoline' | 'diesel' | 'hybrid' | 'electric',
-    transmission: 'manual' as 'manual' | 'automatic',
+    fuel_type: 'gasoline' as Vehicle['fuel_type'],
+    transmission: 'manual' as Vehicle['transmission'],
     seat_count: 5,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -46,9 +44,9 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
         registration_number: vehicle.registration_number,
         daily_rate: vehicle.daily_rate,
         status: vehicle.status,
-        fuel_type: (vehicle as any).fuel_type || 'gasoline',
-        transmission: (vehicle as any).transmission || 'manual',
-        seat_count: (vehicle as any).seat_count || 5,
+        fuel_type: vehicle.fuel_type || 'gasoline',
+        transmission: vehicle.transmission || 'manual',
+        seat_count: vehicle.seat_count || 5,
       });
       
       if (vehicle.image_url) {
@@ -58,16 +56,76 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
   }, [vehicle]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const target = e.target as HTMLInputElement | HTMLSelectElement;
+    const name = target.name;
+    const value = target.value;
+    
     setFormData(prev => ({
       ...prev,
       [name]: name === 'year' || name === 'daily_rate' || name === 'seat_count' ? Number(value) : value,
     }));
   };
 
+  // Pomoćna funkcija za dobijanje veličine fajla u KB
+  const getFileSizeKB = (file: File): number => {
+    return Math.round(file.size / 1024);
+  };
+
+  // Osnovna optimizacija slike
+  const optimizeImageBasic = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Postavke za optimizaciju
+        const maxWidth = 1200;
+        const maxHeight = 800;
+        const quality = 0.85;
+
+        // Kalkulacija novih dimenzija
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Nacrtaj optimizovanu sliku
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const optimizedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(optimizedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', quality);
+      };
+
+      img.onerror = () => {
+        resolve(file); // Ako ima greška, vrati originalni fajl
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files[0]) {
+      const file = files[0];
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -86,42 +144,47 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
       setImageOptimizing(true);
 
       try {
-        // Check if optimization is needed
-        const needsOptimization = ImageOptimizer.needsOptimization(file, 500);
+        // Proveri da li je potrebna optimizacija (fajlovi veći od 500KB)
+        const needsOptimization = file.size > 500 * 1024;
+        
+        let finalFile = file;
         
         if (needsOptimization) {
-          // Optimize the image
-          const optimizedFile = await ImageOptimizer.optimizeImage(file, {
-            maxWidth: 1200,
-            maxHeight: 800,
-            quality: 0.85,
-            targetSizeKB: 400,
-            format: 'webp'
-          });
+          // Optimizuj sliku
+          finalFile = await optimizeImageBasic(file);
           
-          setImageFile(optimizedFile);
           setImageStats({
-            originalSize: ImageOptimizer.getFileSizeKB(file),
-            optimizedSize: ImageOptimizer.getFileSizeKB(optimizedFile)
+            originalSize: getFileSizeKB(file),
+            optimizedSize: getFileSizeKB(finalFile)
           });
         } else {
-          setImageFile(file);
           setImageStats({
-            originalSize: ImageOptimizer.getFileSizeKB(file),
-            optimizedSize: ImageOptimizer.getFileSizeKB(file)
+            originalSize: getFileSizeKB(file),
+            optimizedSize: getFileSizeKB(file)
           });
         }
 
-        // Create preview
+        setImageFile(finalFile);
+
+        // Kreiraj preview
         const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
+        reader.onload = (event) => {
+          const result = (event.target as FileReader).result as string;
+          setImagePreview(result);
         };
-        reader.readAsDataURL(imageFile || file);
+        reader.readAsDataURL(finalFile);
         
       } catch (error) {
         console.error('Error optimizing image:', error);
         setError('Greška pri optimizaciji slike. Pokušajte sa drugom slikom.');
+        // Ako optimizacija ne uspe, koristi originalni fajl
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = (event.target as FileReader).result as string;
+          setImagePreview(result);
+        };
+        reader.readAsDataURL(file);
       } finally {
         setImageOptimizing(false);
       }
@@ -182,7 +245,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
-            {vehicle ? 'Izmjeni vozilo' : 'Dodaj novo vozilo'}
+            {vehicle ? 'Izmijeni vozilo' : 'Dodaj novo vozilo'}
           </h2>
           <button
             onClick={onClose}
@@ -472,7 +535,7 @@ export default function VehicleModal({ vehicle, onClose }: VehicleModalProps) {
                   Čuvanje...
                 </>
               ) : (
-                vehicle ? 'Izmjeni' : 'Dodaj'
+                vehicle ? 'Izmijeni' : 'Dodaj'
               )}
             </button>
           </div>

@@ -92,15 +92,16 @@ export default function VehiclesPage() {
     fetchVehicles();
   };
 
-  const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'available': return 'Dostupno';
-    case 'rented': return 'Iznajmljeno';
-    case 'maintenance': return 'Servis';
-    case 'broken': return 'Pokvareno';
-    default: return status;
-  }
-};
+  // Ispravljena funkcija za status labele - koristi Vehicle['status'] tip
+  const getStatusLabel = (status: Vehicle['status']) => {
+    switch (status) {
+      case 'available': return 'Dostupno';
+      case 'rented': return 'Iznajmljeno';
+      case 'maintenance': return 'Servis';
+      case 'broken': return 'Pokvareno';
+      default: return status;
+    }
+  };
 
   const getFuelTypeLabel = (fuelType: string) => {
     switch (fuelType) {
@@ -123,6 +124,22 @@ export default function VehiclesPage() {
   const getStatusCount = (status: VehicleStatus) => {
     if (status === 'all') return vehicles.length;
     return vehicles.filter(v => v.status === status).length;
+  };
+
+  // Dodana funkcija za status boje da izbegne dugačke ternary operatore
+  const getStatusColor = (status: Vehicle['status']) => {
+    switch (status) {
+      case 'available':
+        return 'bg-green-100 text-green-800';
+      case 'rented':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'maintenance':
+        return 'bg-blue-100 text-blue-800';
+      case 'broken':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading) {
@@ -166,24 +183,24 @@ export default function VehiclesPage() {
       <div className="mb-6 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-  { key: 'all', label: 'Sva vozila' },
-  { key: 'available', label: 'Dostupna' },
-  { key: 'rented', label: 'Iznajmljena' },
-  { key: 'maintenance', label: 'Servis' },
-  { key: 'broken', label: 'Pokvarena' }
-].map((tab) => (
-  <button
-    key={tab.key}
-    onClick={() => setStatusFilter(tab.key as VehicleStatus)}
-    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-      statusFilter === tab.key
-        ? 'border-blue-500 text-blue-600'
-        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-    }`}
-  >
-    {tab.label} ({getStatusCount(tab.key as VehicleStatus)})
-  </button>
-))}
+            { key: 'all', label: 'Sva vozila' },
+            { key: 'available', label: 'Dostupna' },
+            { key: 'rented', label: 'Iznajmljena' },
+            { key: 'maintenance', label: 'Servis' },
+            { key: 'broken', label: 'Pokvarena' }
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key as VehicleStatus)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                statusFilter === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label} ({getStatusCount(tab.key as VehicleStatus)})
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -193,7 +210,7 @@ export default function VehiclesPage() {
           <p className="text-gray-500 mb-4">
             {statusFilter === 'all' 
               ? 'Nemate dodanih vozila' 
-              : `Nema vozila sa statusom "${getStatusLabel(statusFilter)}"`
+              : `Nema vozila sa statusom "${getStatusLabel(statusFilter as Vehicle['status'])}"`
             }
           </p>
           {statusFilter === 'all' && (
@@ -222,19 +239,11 @@ export default function VehiclesPage() {
                     <CarIcon className="h-16 w-16 text-gray-400" />
                   </div>
                 )}
-                {/* Status badge */}
+                {/* Status badge - koristi novu funkciju */}
                 <div className="absolute top-2 right-2">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-  vehicle.status === 'available' 
-    ? 'bg-green-100 text-green-800'
-    : vehicle.status === 'rented'
-    ? 'bg-yellow-100 text-yellow-800'
-    : vehicle.status === 'broken'
-    ? 'bg-red-100 text-red-800'
-    : 'bg-gray-100 text-gray-800'
-}`}>
-  {getStatusLabel(vehicle.status)}
-</span>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(vehicle.status)}`}>
+                    {getStatusLabel(vehicle.status)}
+                  </span>
                 </div>
               </div>
 
@@ -284,7 +293,7 @@ export default function VehiclesPage() {
                   <button
                     onClick={() => handleEdit(vehicle)}
                     className="text-blue-600 hover:text-blue-800 transition-colors p-2"
-                    title="Izmjeni"
+                    title="Izmijeni"
                   >
                     <Edit2 className="h-5 w-5" />
                   </button>
