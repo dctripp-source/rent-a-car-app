@@ -144,39 +144,32 @@ export default function CalendarPage() {
   }, []);
 
   const eventStyleGetter = (event: CalendarEvent) => {
-    const rental = event.resource.rental;
-    let backgroundColor = '#3174ad';
+  const rental = event.resource.rental;
+  let backgroundColor = '#3174ad'; // default plava za active
 
-    switch (rental.status) {
-      case 'completed':
-        backgroundColor = '#10b981';
-        break;
-      case 'cancelled':
-        backgroundColor = '#ef4444';
-        break;
-      case 'reserved':
-        backgroundColor = '#f59e0b';
-        break;
-      case 'active':
-        if (new Date(rental.end_date) < new Date()) {
-          backgroundColor = '#f59e0b'; // Orange for overdue
-        } else {
-          backgroundColor = '#3174ad'; // Blue for active
-        }
-        break;
-    }
+  if (rental.status === 'completed') {
+    backgroundColor = '#10b981'; // zelena
+  } else if (rental.status === 'cancelled') {
+    backgroundColor = '#ef4444'; // crvena
+  } else if (rental.status === 'reserved') {
+    backgroundColor = '#f59e0b'; // žuta za reserved
+  } else if (rental.status === 'active') {
+    backgroundColor = '#3174ad'; // plava za active
+  } else if (new Date(rental.end_date) < new Date()) {
+    backgroundColor = '#f59e0b'; // narandžasta za overdue
+  }
 
-    return {
-      style: {
-        backgroundColor,
-        borderRadius: '5px',
-        opacity: 0.8,
-        color: 'white',
-        border: '0px',
-        display: 'block',
-      },
-    };
+  return {
+    style: {
+      backgroundColor,
+      borderRadius: '5px',
+      opacity: 0.8,
+      color: 'white',
+      border: '0px',
+      display: 'block',
+    },
   };
+};
 
   const handleModalClose = () => {
     setIsRentalModalOpen(false);
@@ -418,23 +411,23 @@ export default function CalendarPage() {
           
           {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-[#3174ad] rounded mr-2"></div>
-              <span>Aktivno</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-[#f59e0b] rounded mr-2"></div>
-              <span>Rezervisano / Kašnjenje</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-[#10b981] rounded mr-2"></div>
-              <span>Završeno</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-[#ef4444] rounded mr-2"></div>
-              <span>Otkazano</span>
-            </div>
-          </div>
+  <div className="flex items-center">
+    <div className="w-4 h-4 bg-[#f59e0b] rounded mr-2"></div>
+    <span>Rezervisano</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-4 h-4 bg-[#3174ad] rounded mr-2"></div>
+    <span>Aktivno</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-4 h-4 bg-[#10b981] rounded mr-2"></div>
+    <span>Završeno</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-4 h-4 bg-[#ef4444] rounded mr-2"></div>
+    <span>Otkazano</span>
+  </div>
+</div>
         </div>
       )}
 

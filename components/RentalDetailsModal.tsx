@@ -40,6 +40,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
       const response = await fetchWithAuth('/api/vehicles');
       if (response.ok) {
         const vehicles = await response.json();
+        // Filtriraj samo dostupna vozila i trenutno vozilo
         const available = vehicles.filter((v: Vehicle) => 
           v.status === 'available' || v.id === rental.vehicle_id
         );
@@ -176,29 +177,58 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
   };
 
   const handleCompleteRental = async () => {
-    if (!confirm('Da li ste sigurni da želite označiti ovo iznajmljivanje kao završeno?')) {
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await fetchWithAuth(`/api/rentals/${rental.id}/complete`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Greška pri završetku iznajmljivanja');
+    if (rental.status === 'reserved') {
+      // Aktiviraj rezervaciju
+      if (!confirm('Da li ste sigurni da želite aktivirati ovu rezervaciju?')) {
+        return;
       }
 
-      onClose();
-    } catch (error: any) {
-      console.error('Error completing rental:', error);
-      setError(error.message || 'Greška pri završetku iznajmljivanja');
-    } finally {
-      setLoading(false);
+      setLoading(true);
+      setError('');
+      
+      try {
+        const response = await fetchWithAuth(`/api/rentals/${rental.id}/activate`, {
+          method: 'POST',
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Greška pri aktiviranju rezervacije');
+        }
+
+        onClose();
+      } catch (error: any) {
+        console.error('Error activating rental:', error);
+        setError(error.message || 'Greška pri aktiviranju rezervacije');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Završi rezervaciju
+      if (!confirm('Da li ste sigurni da želite označiti ovo iznajmljivanje kao završeno?')) {
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      
+      try {
+        const response = await fetchWithAuth(`/api/rentals/${rental.id}/complete`, {
+          method: 'POST',
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Greška pri završetku iznajmljivanja');
+        }
+
+        onClose();
+      } catch (error: any) {
+        console.error('Error completing rental:', error);
+        setError(error.message || 'Greška pri završetku iznajmljivanja');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -490,7 +520,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Završavanje...' : 
+                {loading ? 'Obrađujem...' : 
                  rental.status === 'reserved' ? 'Aktiviraj rezervaciju' : 'Završi iznajmljivanje'}
               </button>
             )}
