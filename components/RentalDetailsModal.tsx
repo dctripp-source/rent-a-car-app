@@ -1,8 +1,8 @@
-// components/RentalDetailsModal.tsx - Ažurirana sa svim novim funkcijama
+// components/RentalDetailsModal.tsx - Kompletna verzija sa svim funkcijama
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, User, Car, Download, Plus, Edit2, RefreshCw, Save } from 'lucide-react';
+import { X, Calendar, User, Car, Download, Plus, Edit2, RefreshCw, Save, Trash2, AlertTriangle } from 'lucide-react';
 import { Rental, Vehicle } from '@/types';
 import { format } from 'date-fns';
 import { useApi } from '@/hooks/useApi';
@@ -17,12 +17,14 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
   const [showExtension, setShowExtension] = useState(false);
   const [showVehicleChange, setShowVehicleChange] = useState(false);
   const [showNotesEdit, setShowNotesEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [extensionDays, setExtensionDays] = useState(1);
   const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [notes, setNotes] = useState(rental.notes || '');
   const [loading, setLoading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   const extensionPrice = extensionDays * (rental.vehicle?.daily_rate || 0);
@@ -148,6 +150,31 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError('');
+    
+    try {
+      const response = await fetchWithAuth(`/api/rentals/${rental.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Greška pri brisanju rezervacije');
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error deleting rental:', error);
+      setError(error.message || 'Greška pri brisanju rezervacije');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const handleGeneratePDF = async () => {
     setDownloadingPdf(true);
     setError('');
@@ -250,6 +277,63 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
         {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-md text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-500 mr-3" />
+                <h3 className="text-lg font-bold text-gray-900">Potvrdi brisanje</h3>
+              </div>
+              <div className="mb-4">
+                <p className="text-gray-600 mb-2">
+                  Da li ste sigurni da želite obrisati ovu rezervaciju?
+                </p>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="font-medium">{rental.vehicle?.brand} {rental.vehicle?.model} - {rental.client?.name}</p>
+                  <p className="text-sm text-gray-600">
+                    {format(new Date(rental.start_date), 'dd.MM.yyyy')} - {format(new Date(rental.end_date), 'dd.MM.yyyy')}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Status: {rental.status === 'active' ? 'Aktivno' : 
+                             rental.status === 'completed' ? 'Završeno' : 
+                             rental.status === 'reserved' ? 'Rezervisano' : 'Otkazano'}
+                  </p>
+                </div>
+                <p className="text-red-600 text-sm mt-2">
+                  Ova akcija se ne može poništiti. {rental.status === 'active' ? 'Vozilo će biti vraćeno u status "dostupno".' : ''}
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  disabled={deleting}
+                >
+                  Otkaži
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Brisanje...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Obriši rezervaciju
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -495,11 +579,11 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
           )}
 
           {/* Actions */}
-          <div className="flex space-x-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleGeneratePDF}
               disabled={downloadingPdf}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {downloadingPdf ? (
                 <>
@@ -509,7 +593,7 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
               ) : (
                 <>
                   <Download className="h-5 w-5 mr-2" />
-                  Generiši ugovor (PDF)
+                  Generiši ugovor
                 </>
               )}
             </button>
@@ -518,16 +602,26 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
               <button
                 onClick={handleCompleteRental}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Obrađujem...' : 
                  rental.status === 'reserved' ? 'Aktiviraj rezervaciju' : 'Završi iznajmljivanje'}
               </button>
             )}
+
+            {/* Delete Button */}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={deleting}
+              className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-5 w-5 mr-2" />
+              Obriši rezervaciju
+            </button>
             
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
             >
               Zatvori
             </button>
