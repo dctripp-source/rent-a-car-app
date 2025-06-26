@@ -160,8 +160,8 @@ export default function CalendarPage() {
     setError('');
 
     try {
-      const response = await fetchWithAuth(`/api/rentals/${selectedEventForDelete.resource.rental.id}`, {
-        method: 'DELETE',
+      const response = await fetchWithAuth(`/api/rentals/${selectedEventForDelete.resource.rental.id}/delete`, {
+        method: 'POST',
       });
 
       const data = await response.json();

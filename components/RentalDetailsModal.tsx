@@ -155,8 +155,8 @@ export default function RentalDetailsModal({ rental, onClose }: RentalDetailsMod
     setError('');
     
     try {
-      const response = await fetchWithAuth(`/api/rentals/${rental.id}`, {
-        method: 'DELETE',
+      const response = await fetchWithAuth(`/api/rentals/${rental.id}/delete`, {
+        method: 'POST',
       });
 
       const data = await response.json();
